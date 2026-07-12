@@ -8,11 +8,12 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Arial,sans-serif;background:#f5f5f0;color:#1a1a1a;min-height:100vh}
 .topbar{background:#3B6D11;color:#fff;padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:50}
-.topbar-logo{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:700}
+.topbar-logo{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:700;white-space:nowrap}
 .topbar-logo span{font-size:12px;opacity:0.75;font-weight:400}
-.topbar-right{display:flex;align-items:center;gap:12px}
-.nav{display:flex;gap:4px}
-.nav-btn{padding:6px 14px;border:1.5px solid rgba(255,255,255,0.35);border-radius:6px;font-size:12px;cursor:pointer;background:transparent;color:#fff;font-family:Arial,sans-serif}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.nav{display:flex;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px}
+.nav::-webkit-scrollbar{display:none}
+.nav-btn{padding:6px 12px;border:1.5px solid rgba(255,255,255,0.35);border-radius:6px;font-size:11px;cursor:pointer;background:transparent;color:#fff;font-family:Arial,sans-serif;white-space:nowrap;flex-shrink:0}
 .nav-btn.active{background:#fff;color:#3B6D11;border-color:#fff;font-weight:700}
 .nav-btn:hover:not(.active){background:rgba(255,255,255,0.15)}
 .sync{font-size:11px;color:rgba(255,255,255,0.75);display:flex;align-items:center;gap:5px}
@@ -96,9 +97,9 @@ tr.prod-row:hover td{background:#f5faf0}
   <div class="topbar-right">
     <div class="sync"><span class="sync-dot" id="sync-dot"></span><span id="sync-label">conectando...</span></div>
     <div class="nav">
-      <button class="nav-btn active" onclick="showTab('estoque',this)">Estoque</button>
-      <button class="nav-btn" onclick="showTab('movimentos',this)">Movimentos</button>
-      <button class="nav-btn" onclick="showTab('compras',this)">Compras</button>
+      <button class="nav-btn active" onclick="showTab('estoque',this)">📦 Estoque</button>
+      <button class="nav-btn" onclick="showTab('movimentos',this)">📋 Movimentos</button>
+      <button class="nav-btn" onclick="showTab('compras',this)">🛒 Compras</button>
       <button class="nav-btn" onclick="showTab('ranking',this)">🏆 Ranking</button>
       <button class="nav-btn" onclick="showTab('entradas',this)">📊 Entradas</button>
       <button class="nav-btn" onclick="showTab('giro',this)">📈 Giro</button>
