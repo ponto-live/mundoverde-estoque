@@ -260,9 +260,11 @@ tr.prod-row:hover td{background:#f5faf0}
     <div class="sec-header"><span class="sec-title">📈 Giro de estoque</span></div>
     <div id="giro-filtros" style="display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap"></div>
     <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
-      <input type="date" id="giro-data-ini" style="font-size:12px;padding:6px 10px;border:1px solid #ddd;border-radius:7px;font-family:Arial,sans-serif">
+      <input type="date" id="giro-data-ini" onchange="renderGiro()" style="font-size:12px;padding:6px 10px;border:1px solid #ddd;border-radius:7px;font-family:Arial,sans-serif">
       <span style="font-size:12px;color:#888">até</span>
-      <input type="date" id="giro-data-fim" style="font-size:12px;padding:6px 10px;border:1px solid #ddd;border-radius:7px;font-family:Arial,sans-serif">
+      <input type="date" id="giro-data-fim" onchange="renderGiro()" style="font-size:12px;padding:6px 10px;border:1px solid #ddd;border-radius:7px;font-family:Arial,sans-serif">
+      <button onclick="renderGiro()" style="padding:6px 16px;background:#3B6D11;color:#fff;border:none;border-radius:7px;font-size:12px;cursor:pointer;font-family:Arial,sans-serif;font-weight:600;white-space:nowrap">🔍 Pesquisar</button>
+      <button onclick="limparFiltrosGiro()" style="padding:6px 12px;border:1px solid #ddd;border-radius:7px;font-size:12px;cursor:pointer;background:#fff;font-family:Arial,sans-serif;white-space:nowrap">✕ Limpar</button>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
       <div>
@@ -914,6 +916,32 @@ window.setEntradasPeriodo=function(d){
 let giroPage=1;
 const giroPorPagina=10;
 
+function calcularVendasGiro(){
+  const dataIni=document.getElementById('giro-data-ini')?.value||'';
+  const dataFim=document.getElementById('giro-data-fim')?.value||'';
+  const usandoData=dataIni||dataFim;
+
+  const corte=new Date(); corte.setDate(corte.getDate()-giroPeriodo);
+  const vendas={};
+  historico.forEach(h=>{
+    if(h.tipo!=='saida') return;
+    if(h.obs&&h.obs.includes('Ajuste de inventário')) return;
+    const partes=h.data.split('/');
+    if(partes.length===3){
+      const dh=new Date(`${partes[2]}-${partes[1]}-${partes[0]}`);
+      if(usandoData){
+        if(dataIni && dh<new Date(dataIni)) return;
+        if(dataFim && dh>new Date(dataFim)) return;
+      } else {
+        if(dh<corte) return;
+      }
+    }
+    if(!vendas[h.produto]) vendas[h.produto]=0;
+    vendas[h.produto]+=h.qtd;
+  });
+  return{vendas,usandoHist:Object.keys(vendas).length>0,usandoData};
+}
+
 window.renderGiro=function(){
   const filtros=document.getElementById('giro-filtros');
   const opcoes=[{l:'7 dias',v:7},{l:'15 dias',v:15},{l:'30 dias',v:30},{l:'3 meses',v:90}];
@@ -921,11 +949,19 @@ window.renderGiro=function(){
 
   const busca=document.getElementById('giro-busca')?.value.toLowerCase()||'';
   const ativos=produtos.filter(p=>!p.arquivado);
+  const{vendas,usandoHist,usandoData}=calcularVendasGiro();
+  const dias=usandoData?(()=>{
+    const dataIni=document.getElementById('giro-data-ini')?.value;
+    const dataFim=document.getElementById('giro-data-fim')?.value;
+    if(dataIni&&dataFim) return Math.max(1,Math.round((new Date(dataFim)-new Date(dataIni))/86400000)+1);
+    return giroPeriodo;
+  })():giroPeriodo;
   let lista=ativos.map(p=>{
-    const g=giro(p);
+    const g=usandoHist?(vendas[p.nome]||0):giro(p);
     const qtd=qtdTotal(p.id);
-    const cobertura=g>0?Math.round(qtd/(g/30)):qtd>0?999:0;
-    return{p,g,qtd,cobertura};
+    const gMes=Math.round(g/dias*30);
+    const cobertura=gMes>0?Math.round(qtd/(gMes/30)):qtd>0?999:0;
+    return{p,g:gMes,qtd,cobertura};
   }).filter(item=>!busca||item.p.nome.toLowerCase().includes(busca))
     .sort((a,b)=>b.g-a.g);
 
@@ -983,7 +1019,12 @@ window.renderGiro=function(){
   }
   pag.innerHTML=`<span style="font-size:12px;color:#888;align-self:center">${total} produtos · Página ${giroPage} de ${totalPags}</span>${pagHtml}`;
 }
-window.setGiroPeriodo=function(d){giroPeriodo=d;giroPage=1;renderGiro();}
+window.setGiroPeriodo=function(d){
+  giroPeriodo=d;giroPage=1;
+  if(document.getElementById('giro-data-ini')) document.getElementById('giro-data-ini').value='';
+  if(document.getElementById('giro-data-fim')) document.getElementById('giro-data-fim').value='';
+  renderGiro();
+}
 window.setGiroPage=function(p){giroPage=p;renderGiro();}
 
 // ── TAREFAS ───────────────────────────────────────────────────────
