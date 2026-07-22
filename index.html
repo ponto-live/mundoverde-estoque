@@ -741,7 +741,7 @@ function calcularRanking(){
   const vendas={};
   historico.forEach(h=>{
     if(h.tipo!=='saida') return;
-    if(h.obs&&h.obs.includes('Ajuste de inventário')) return;
+    if(!h.obs||!h.obs.startsWith('Venda')) return;
     const partes=h.data.split('/');
     if(partes.length===3){
       const dh=new Date(`${partes[2]}-${partes[1]}-${partes[0]}`);
@@ -925,7 +925,7 @@ function calcularVendasGiro(){
   const vendas={};
   historico.forEach(h=>{
     if(h.tipo!=='saida') return;
-    if(h.obs&&h.obs.includes('Ajuste de inventário')) return;
+    if(!h.obs||!h.obs.startsWith('Venda')) return;
     const partes=h.data.split('/');
     if(partes.length===3){
       const dh=new Date(`${partes[2]}-${partes[1]}-${partes[0]}`);
