@@ -193,6 +193,17 @@ tr.prod-row:hover td{background:#f5faf0}
 
   <div id="tab-movimentos" class="tab-content">
     <div class="sec-header"><span class="sec-title">📋 Histórico de movimentações</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <div id="mov-card-vendidos" style="background:#fff;border:1px solid #e0e0d8;border-radius:10px;padding:16px;text-align:center;cursor:pointer" onclick="filtrarMovPor('venda')" title="Clique para ver quais produtos">
+        <div style="font-size:12px;color:#888;margin-bottom:6px" id="mov-vendidos-label">Produtos vendidos no mês</div>
+        <div id="mov-vendidos-count" style="font-size:32px;font-weight:800;color:#3B6D11">0</div>
+      </div>
+      <div id="mov-card-outras" style="background:#fff;border:1px solid #e0e0d8;border-radius:10px;padding:16px;text-align:center;cursor:pointer" onclick="filtrarMovPor('outras')" title="Clique para ver quais produtos">
+        <div style="font-size:12px;color:#888;margin-bottom:6px" id="mov-outras-label">Outras saídas no mês (vencimento, avaria, brinde, ajuste)</div>
+        <div id="mov-outras-count" style="font-size:32px;font-weight:800;color:#BA7517">0</div>
+      </div>
+    </div>
+    <div id="mov-filtro-banner"></div>
     <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
       <select id="mov-tipo" style="font-size:12px;padding:6px 10px;border:1px solid #ddd;border-radius:7px;font-family:Arial,sans-serif">
         <option value="">Todos os tipos</option>
@@ -641,6 +652,7 @@ window.limparFiltrosMov=function(){
   document.getElementById('mov-data-ini').value='';
   document.getElementById('mov-data-fim').value='';
   document.getElementById('mov-busca').value='';
+  movFiltroEspecial=null;
   renderHistorico();
 }
 
@@ -683,12 +695,55 @@ window.filtrarPor=function(tipo){
   renderTabela();
 }
 
+let movFiltroEspecial=null;
+
+window.filtrarMovPor=function(tipo){
+  movFiltroEspecial=(movFiltroEspecial===tipo)?null:tipo;
+  const ini=document.getElementById('mov-data-ini');
+  const fim=document.getElementById('mov-data-fim');
+  if(movFiltroEspecial && !ini.value && !fim.value){
+    const hoje=new Date();
+    const primeiroDia=new Date(hoje.getFullYear(),hoje.getMonth(),1);
+    ini.value=primeiroDia.toISOString().slice(0,10);
+    fim.value=hoje.toISOString().slice(0,10);
+  }
+  renderHistorico();
+  document.getElementById('mov-filtro-banner')?.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
 window.renderHistorico=function(){
   const list=document.getElementById('historico-list');
   const tipo=document.getElementById('mov-tipo')?.value||'';
   const dataIni=document.getElementById('mov-data-ini')?.value||'';
   const dataFim=document.getElementById('mov-data-fim')?.value||'';
   const busca=document.getElementById('mov-busca')?.value.toLowerCase()||'';
+
+  // Período dos cards: usa o filtro de data se preenchido, senão o mês atual
+  let periodoIni,periodoFim,usandoMesPadrao=false;
+  if(dataIni||dataFim){
+    periodoIni=dataIni?new Date(dataIni):null;
+    periodoFim=dataFim?new Date(dataFim):null;
+  } else {
+    const hoje=new Date();
+    periodoIni=new Date(hoje.getFullYear(),hoje.getMonth(),1);
+    periodoFim=hoje;
+    usandoMesPadrao=true;
+  }
+  const noPeriodo=h=>{
+    const p=h.data.split('/');
+    if(p.length!==3) return false;
+    const d=new Date(`${p[2]}-${p[1]}-${p[0]}`);
+    if(periodoIni && d<periodoIni) return false;
+    if(periodoFim && d>periodoFim) return false;
+    return true;
+  };
+  const vendasPeriodo=historico.filter(h=>h.tipo==='saida'&&h.obs&&h.obs.startsWith('Venda')&&noPeriodo(h));
+  const outrasPeriodo=historico.filter(h=>h.tipo==='saida'&&(!h.obs||!h.obs.startsWith('Venda'))&&noPeriodo(h));
+  document.getElementById('mov-vendidos-count').textContent=new Set(vendasPeriodo.map(h=>h.produto)).size;
+  document.getElementById('mov-outras-count').textContent=new Set(outrasPeriodo.map(h=>h.produto)).size;
+  const periodoLabel=usandoMesPadrao?'no mês':'no período selecionado';
+  document.getElementById('mov-vendidos-label').textContent=`Produtos vendidos ${periodoLabel}`;
+  document.getElementById('mov-outras-label').textContent=`Outras saídas ${periodoLabel} (vencimento, avaria, brinde, ajuste)`;
 
   let lista=historico.filter(h=>{
     if(tipo && h.tipo!==tipo) return false;
@@ -701,7 +756,27 @@ window.renderHistorico=function(){
         if(dataFim && d>new Date(dataFim)) return false;
       }
     }
+    if(movFiltroEspecial==='venda' && !(h.tipo==='saida'&&h.obs&&h.obs.startsWith('Venda'))) return false;
+    if(movFiltroEspecial==='outras' && !(h.tipo==='saida'&&(!h.obs||!h.obs.startsWith('Venda')))) return false;
     return true;
+  });
+
+  const bannerLabels={
+    'venda':`💰 Mostrando saídas do tipo Venda (${lista.length})`,
+    'outras':`📦 Mostrando outras saídas — vencimento, avaria, brinde, ajuste (${lista.length})`
+  };
+  const movBanner=document.getElementById('mov-filtro-banner');
+  if(movBanner){
+    if(movFiltroEspecial){
+      movBanner.innerHTML=`<div style="background:#FAEEDA;border:1px solid #FAC775;border-radius:8px;padding:9px 14px;font-size:12px;color:#633806;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">${bannerLabels[movFiltroEspecial]} <button onclick="filtrarMovPor('${movFiltroEspecial}')" style="border:none;background:none;color:#633806;cursor:pointer;font-size:12px;font-weight:700">✕ Ver todos</button></div>`;
+    } else {
+      movBanner.innerHTML='';
+    }
+  }
+  ['mov-card-vendidos','mov-card-outras'].forEach(id=>{
+    const el=document.getElementById(id);
+    const tp=id==='mov-card-vendidos'?'venda':'outras';
+    if(el) el.style.outline=(movFiltroEspecial===tp)?'2px solid #3B6D11':'none';
   });
 
   if(!lista.length){list.innerHTML='<div class="empty-state">📋 Nenhuma movimentação encontrada.</div>';return;}
