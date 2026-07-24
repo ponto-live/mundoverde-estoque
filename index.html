@@ -267,6 +267,16 @@ tr.prod-row:hover td{background:#f5faf0}
       <button onclick="limparFiltrosGiro()" style="padding:6px 12px;border:1px solid #ddd;border-radius:7px;font-size:12px;cursor:pointer;background:#fff;font-family:Arial,sans-serif;white-space:nowrap">✕ Limpar</button>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+      <div style="background:#fff;border:1px solid #e0e0d8;border-radius:10px;padding:16px;text-align:center">
+        <div style="font-size:12px;color:#888;margin-bottom:6px">Estoque sem giro a mais de 30 dias</div>
+        <div id="giro-estagnados-count" style="font-size:32px;font-weight:800;color:#A32D2D">0</div>
+      </div>
+      <div style="background:#fff;border:1px solid #e0e0d8;border-radius:10px;padding:16px;text-align:center">
+        <div style="font-size:12px;color:#888;margin-bottom:6px">Estoque parado (nunca vendido)</div>
+        <div id="giro-nuncavendido-count" style="font-size:32px;font-weight:800;color:#BA7517">0</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
       <div>
         <div style="font-size:12px;font-weight:700;color:#3B6D11;margin-bottom:8px">🚀 Maior giro</div>
         <div id="giro-top" style="background:#fff;border:1px solid #e0e0d8;border-radius:10px;overflow:hidden"></div>
@@ -285,11 +295,12 @@ tr.prod-row:hover td{background:#f5faf0}
     <div class="table-wrap" style="overflow-x:auto">
       <table style="min-width:500px">
         <thead><tr>
-          <th style="width:35%">Produto</th>
-          <th style="width:12%">Estoque</th>
-          <th style="width:15%">Vendas/mês</th>
-          <th style="width:18%">Cobertura</th>
-          <th style="width:20%">Situação</th>
+          <th style="width:30%">Produto</th>
+          <th style="width:11%">Estoque</th>
+          <th style="width:13%">Vendas/mês</th>
+          <th style="width:15%">Cobertura</th>
+          <th style="width:14%">Dias sem venda</th>
+          <th style="width:17%">Situação</th>
         </tr></thead>
         <tbody id="giro-tbody"></tbody>
       </table>
@@ -942,6 +953,19 @@ function calcularVendasGiro(){
   return{vendas,usandoHist:Object.keys(vendas).length>0,usandoData};
 }
 
+function calcularUltimasVendas(){
+  const ultimas={};
+  historico.forEach(h=>{
+    if(h.tipo!=='saida') return;
+    if(!h.obs||!h.obs.startsWith('Venda')) return;
+    const partes=h.data.split('/');
+    if(partes.length!==3) return;
+    const dh=new Date(`${partes[2]}-${partes[1]}-${partes[0]}`);
+    if(!ultimas[h.produto]||dh>ultimas[h.produto]) ultimas[h.produto]=dh;
+  });
+  return ultimas;
+}
+
 window.renderGiro=function(){
   const filtros=document.getElementById('giro-filtros');
   const opcoes=[{l:'7 dias',v:7},{l:'15 dias',v:15},{l:'30 dias',v:30},{l:'3 meses',v:90}];
@@ -950,6 +974,8 @@ window.renderGiro=function(){
   const busca=document.getElementById('giro-busca')?.value.toLowerCase()||'';
   const ativos=produtos.filter(p=>!p.arquivado);
   const{vendas,usandoHist,usandoData}=calcularVendasGiro();
+  const ultimasVendas=calcularUltimasVendas();
+  const hojeDt=new Date();
   const dias=usandoData?(()=>{
     const dataIni=document.getElementById('giro-data-ini')?.value;
     const dataFim=document.getElementById('giro-data-fim')?.value;
@@ -961,9 +987,20 @@ window.renderGiro=function(){
     const qtd=qtdTotal(p.id);
     const gMes=Math.round(g/dias*30);
     const cobertura=gMes>0?Math.round(qtd/(gMes/30)):qtd>0?999:0;
-    return{p,g:gMes,qtd,cobertura};
+    const ultimaVenda=ultimasVendas[p.nome]||null;
+    const diasSemVenda=ultimaVenda?Math.floor((hojeDt-ultimaVenda)/86400000):null;
+    return{p,g:gMes,qtd,cobertura,diasSemVenda};
   }).filter(item=>!busca||item.p.nome.toLowerCase().includes(busca))
     .sort((a,b)=>b.g-a.g);
+
+  const comEstoque=ativos.filter(p=>qtdTotal(p.id)>0);
+  const estagnados=comEstoque.filter(p=>{
+    const uv=ultimasVendas[p.nome];
+    return uv && Math.floor((hojeDt-uv)/86400000)>=30;
+  });
+  const nuncaVendido=comEstoque.filter(p=>!ultimasVendas[p.nome]);
+  document.getElementById('giro-estagnados-count').textContent=estagnados.length;
+  document.getElementById('giro-nuncavendido-count').textContent=nuncaVendido.length;
 
   function barItem(item,i,cor,last){
     const max=lista[0]?lista[0].g||1:1;
@@ -997,15 +1034,19 @@ window.renderGiro=function(){
   const paginado=lista.slice((giroPage-1)*giroPorPagina, giroPage*giroPorPagina);
 
   const tbody=document.getElementById('giro-tbody');
-  tbody.innerHTML=paginado.map(({p,g,qtd,cobertura})=>{
+  tbody.innerHTML=paginado.map(({p,g,qtd,cobertura,diasSemVenda})=>{
     const sit=situacao(cobertura,g);
     const cobStr=cobertura>=999?'∞':cobertura+'d';
     const cobCor=cobertura>=90?'#A32D2D':cobertura<=15?'#BA7517':'#3B6D11';
+    const dsvStr=diasSemVenda===null?'—':diasSemVenda+'d';
+    const dsvCor=diasSemVenda===null?'#aaa':diasSemVenda>=30?'#A32D2D':diasSemVenda>=15?'#BA7517':'#3B6D11';
+    const dsvPeso=(diasSemVenda!==null&&diasSemVenda>=15)?'font-weight:700':'';
     return `<tr>
       <td><div style="font-weight:700;font-size:12px">${p.nome}</div><div style="font-size:10px;color:#aaa">${p.cat}</div></td>
       <td style="font-weight:700">${qtd} un</td>
       <td>${g} un/mês</td>
       <td style="font-weight:700;color:${cobCor}" title="Dias que o estoque atual vai durar">${cobStr}</td>
+      <td style="color:${dsvCor};${dsvPeso}" title="Dias desde a última venda registrada">${dsvStr}</td>
       <td><span class="badge ${sit.cls}">${sit.label}</span></td>
     </tr>`;
   }).join('');
