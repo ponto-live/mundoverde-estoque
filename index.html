@@ -289,12 +289,12 @@ tr.prod-row:hover td{background:#f5faf0}
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
       <div>
-        <div style="font-size:12px;font-weight:700;color:#3B6D11;margin-bottom:8px">🚀 Maior giro</div>
-        <div id="giro-top" style="background:#fff;border:1px solid #e0e0d8;border-radius:10px;overflow:hidden"></div>
+        <div style="font-size:12px;font-weight:700;color:#3B6D11;margin-bottom:8px">🚀 Maior giro (top 100)</div>
+        <div id="giro-top" style="background:#fff;border:1px solid #e0e0d8;border-radius:10px;overflow-y:auto;max-height:480px"></div>
       </div>
       <div>
-        <div style="font-size:12px;font-weight:700;color:#A32D2D;margin-bottom:8px">🐢 Menor giro / Parados</div>
-        <div id="giro-bottom" style="background:#fff;border:1px solid #e0e0d8;border-radius:10px;overflow:hidden"></div>
+        <div style="font-size:12px;font-weight:700;color:#A32D2D;margin-bottom:8px">🐢 Menor giro / Parados (top 100)</div>
+        <div id="giro-bottom" style="background:#fff;border:1px solid #e0e0d8;border-radius:10px;overflow-y:auto;max-height:480px"></div>
       </div>
     </div>
     <div class="sec-header"><span class="sec-title">Todos os produtos</span></div>
@@ -1132,7 +1132,7 @@ window.renderGiro=function(){
   function barItem(item,i,cor,last,max){
     const pct=Math.min(100,Math.round(item.g/(max||1)*100));
     return `<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:${last?'none':'1px solid #f0f0ea'}">
-      <div style="font-size:16px;width:22px;text-align:center;flex-shrink:0">${['🥇','🥈','🥉','4º','5º'][i]||i+1+'º'}</div>
+      <div style="font-size:16px;width:22px;text-align:center;flex-shrink:0">${['🥇','🥈','🥉'][i]||(i+1)+'º'}</div>
       <div style="flex:1;min-width:0">
         <div style="font-weight:700;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.p.nome}</div>
         <div style="height:5px;background:#f0f0ea;border-radius:3px;margin-top:3px"><div style="height:100%;width:${pct}%;background:${cor};border-radius:3px"></div></div>
@@ -1141,12 +1141,12 @@ window.renderGiro=function(){
     </div>`;
   }
 
-  const top=listaCompleta.slice(0,5);
+  const top=listaCompleta.slice(0,100);
   const maxTop=top[0]?top[0].g||1:1;
-  document.getElementById('giro-top').innerHTML=top.map((it,i)=>barItem(it,i,'#3B6D11',i===4,maxTop)).join('')||'<div class="empty-state" style="padding:1rem">Sem dados</div>';
-  const bottom=[...listaCompleta].sort((a,b)=>a.g-b.g).slice(0,5);
+  document.getElementById('giro-top').innerHTML=top.map((it,i)=>barItem(it,i,'#3B6D11',i===top.length-1,maxTop)).join('')||'<div class="empty-state" style="padding:1rem">Sem dados</div>';
+  const bottom=[...listaCompleta].sort((a,b)=>a.g-b.g).slice(0,100);
   const maxBottom=bottom[0]?bottom[0].g||1:1;
-  document.getElementById('giro-bottom').innerHTML=bottom.map((it,i)=>barItem(it,i,'#A32D2D',i===4,maxBottom)).join('')||'<div class="empty-state" style="padding:1rem">Sem dados</div>';
+  document.getElementById('giro-bottom').innerHTML=bottom.map((it,i)=>barItem(it,i,'#A32D2D',i===bottom.length-1,maxBottom)).join('')||'<div class="empty-state" style="padding:1rem">Sem dados</div>';
 
   function situacao(cob,g){
     if(g===0) return {label:'Sem vendas',cls:'badge-out'};
