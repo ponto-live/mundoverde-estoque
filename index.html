@@ -1079,7 +1079,7 @@ window.renderGiro=function(){
     if(dataIni&&dataFim) return Math.max(1,Math.round((new Date(dataFim)-new Date(dataIni))/86400000)+1);
     return giroPeriodo;
   })():giroPeriodo;
-  let lista=ativos.map(p=>{
+  let listaCompleta=ativos.map(p=>{
     const g=usandoHist?(vendas[p.nome]||0):giro(p);
     const qtd=qtdTotal(p.id);
     const gMes=Math.round(g/dias*30);
@@ -1094,13 +1094,14 @@ window.renderGiro=function(){
     }
     return{p,g:gMes,qtd,cobertura,diasSemVenda,nuncaVendeu};
   }).filter(item=>!busca||item.p.nome.toLowerCase().includes(busca));
+  listaCompleta.sort((a,b)=>b.g-a.g);
 
+  let lista=listaCompleta;
   if(giroFiltroEspecial==='estagnados'){
     lista=lista.filter(item=>item.qtd>0&&!item.nuncaVendeu&&item.diasSemVenda!==null&&item.diasSemVenda>=30);
   } else if(giroFiltroEspecial==='nuncavendido'){
     lista=lista.filter(item=>item.qtd>0&&item.nuncaVendeu);
   }
-  lista.sort((a,b)=>b.g-a.g);
 
   const bannerLabels={
     'estagnados':'📈 Mostrando produtos sem giro há mais de 30 dias',
@@ -1128,9 +1129,8 @@ window.renderGiro=function(){
   document.getElementById('giro-estagnados-count').textContent=estagnados.length;
   document.getElementById('giro-nuncavendido-count').textContent=nuncaVendido.length;
 
-  function barItem(item,i,cor,last){
-    const max=lista[0]?lista[0].g||1:1;
-    const pct=Math.min(100,Math.round(item.g/max*100));
+  function barItem(item,i,cor,last,max){
+    const pct=Math.min(100,Math.round(item.g/(max||1)*100));
     return `<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:${last?'none':'1px solid #f0f0ea'}">
       <div style="font-size:16px;width:22px;text-align:center;flex-shrink:0">${['🥇','🥈','🥉','4º','5º'][i]||i+1+'º'}</div>
       <div style="flex:1;min-width:0">
@@ -1141,9 +1141,12 @@ window.renderGiro=function(){
     </div>`;
   }
 
-  document.getElementById('giro-top').innerHTML=lista.slice(0,5).map((it,i)=>barItem(it,i,'#3B6D11',i===4)).join('')||'<div class="empty-state" style="padding:1rem">Sem dados</div>';
-  const bottom=[...lista].sort((a,b)=>a.g-b.g).slice(0,5);
-  document.getElementById('giro-bottom').innerHTML=bottom.map((it,i)=>barItem(it,i,'#A32D2D',i===4)).join('')||'<div class="empty-state" style="padding:1rem">Sem dados</div>';
+  const top=listaCompleta.slice(0,5);
+  const maxTop=top[0]?top[0].g||1:1;
+  document.getElementById('giro-top').innerHTML=top.map((it,i)=>barItem(it,i,'#3B6D11',i===4,maxTop)).join('')||'<div class="empty-state" style="padding:1rem">Sem dados</div>';
+  const bottom=[...listaCompleta].sort((a,b)=>a.g-b.g).slice(0,5);
+  const maxBottom=bottom[0]?bottom[0].g||1:1;
+  document.getElementById('giro-bottom').innerHTML=bottom.map((it,i)=>barItem(it,i,'#A32D2D',i===4,maxBottom)).join('')||'<div class="empty-state" style="padding:1rem">Sem dados</div>';
 
   function situacao(cob,g){
     if(g===0) return {label:'Sem vendas',cls:'badge-out'};
