@@ -159,6 +159,7 @@ tr.prod-row:hover td{background:#f5faf0}
       <span class="sec-title">📦 Produtos em estoque</span>
       <div style="display:flex;gap:8px;align-items:center">
         <button id="btn-arq" style="padding:6px 12px;border:1px solid #ddd;border-radius:7px;font-size:11px;cursor:pointer;background:#fff;color:#888;font-family:Arial,sans-serif" onclick="toggleArquivados()">📦 Ver arquivados</button>
+        <button style="padding:6px 12px;border:1px solid #ddd;border-radius:7px;font-size:11px;cursor:pointer;background:#fff;color:#888;font-family:Arial,sans-serif" onclick="verificarDuplicados()">🔍 Verificar duplicados</button>
         <button style="padding:7px 16px;background:#1a6fa8;color:#fff;border:none;border-radius:7px;font-size:12px;cursor:pointer;font-family:Arial,sans-serif;font-weight:600" onclick="openImportModal()">📋 Importar nota</button>
         <button class="btn-green" onclick="openAddProdModal()">+ Novo produto</button>
       </div>
@@ -1457,6 +1458,56 @@ window.openValLoteModal=function(loteId){
 }
 
 // ── CONFIRM ───────────────────────────────────────────────────────
+window.verificarDuplicados=function(){
+  modalMode='dupcheck';
+  const ativos=produtos.filter(p=>!p.arquivado);
+  const porNome={};
+  ativos.forEach(p=>{
+    const chave=p.nome.trim().toLowerCase();
+    if(!porNome[chave]) porNome[chave]=[];
+    porNome[chave].push(p);
+  });
+  const porEan={};
+  ativos.forEach(p=>{
+    if(!p.ean) return;
+    const chave=p.ean.trim();
+    if(!porEan[chave]) porEan[chave]=[];
+    porEan[chave].push(p);
+  });
+
+  const gruposNome=Object.values(porNome).filter(g=>g.length>1);
+  const gruposEan=Object.values(porEan).filter(g=>g.length>1);
+  // Junta grupos de nome e EAN, evitando repetir o mesmo grupo de produtos duas vezes
+  const vistos=new Set();
+  const grupos=[];
+  [...gruposNome,...gruposEan].forEach(g=>{
+    const chave=g.map(p=>p.id).sort().join(',');
+    if(vistos.has(chave)) return;
+    vistos.add(chave);
+    grupos.push(g);
+  });
+
+  if(!grupos.length){
+    openModal('🔍 Verificação de duplicados','<div class="empty-state">✅ Nenhum produto duplicado encontrado (nem por nome, nem por código de barras).</div>');
+    return;
+  }
+
+  const corpo=`
+    <div style="font-size:12px;color:#666;margin-bottom:12px">Encontrados <strong>${grupos.length}</strong> grupo(s) de produtos possivelmente duplicados:</div>
+    ${grupos.map(g=>{
+      const totalEstoque=g.reduce((s,p)=>s+qtdTotal(p.id),0);
+      return `<div style="border:1px solid #FAC775;background:#FAEEDA;border-radius:8px;padding:10px 12px;margin-bottom:10px">
+        <div style="font-weight:700;font-size:13px;margin-bottom:6px">${g[0].nome} <span style="font-weight:400;color:#888">(${g.length} cadastros · ${totalEstoque} un no total)</span></div>
+        ${g.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;padding:4px 0;border-top:1px solid #f5e2bb">
+          <span>${p.cat} · EAN: ${p.ean||'—'} · custo R$ ${Number(p.custo||0).toFixed(2)} · <strong>${qtdTotal(p.id)} un</strong></span>
+          <button onclick="closeModal();openEditProdModal('${p.id}')" style="border:1px solid #ddd;background:#fff;border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer">Editar</button>
+        </div>`).join('')}
+      </div>`;
+    }).join('')}
+    <div style="font-size:11px;color:#888;margin-top:4px">💡 Pra unificar: transfira o estoque (via "+ Lote") pro cadastro que já tem custo/dados corretos e arquive o outro.</div>`;
+  openModal('🔍 Verificação de duplicados',corpo);
+}
+
 window.confirmModal=function(){
   if(modalMode==='addtarefa'){
     const titulo=document.getElementById('f-titulo').value.trim();
