@@ -260,7 +260,7 @@ tr.prod-row:hover td{background:#f5faf0}
       <button onclick="renderEntradas()" style="padding:8px 18px;background:#3B6D11;color:#fff;border:none;border-radius:7px;font-size:13px;cursor:pointer;font-family:Arial,sans-serif;font-weight:600;white-space:nowrap">🔍 Pesquisar</button>
       <button onclick="limparFiltrosEnt()" style="padding:8px 14px;border:1px solid #ddd;border-radius:7px;font-size:12px;cursor:pointer;background:#fff;font-family:Arial,sans-serif;white-space:nowrap">✕ Limpar</button>
     </div>
-    <div id="entradas-resumo" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px"></div>
+    <div id="entradas-resumo" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px"></div>
     <div id="entradas-categorias" style="margin-bottom:20px"></div>
     <div class="sec-header" style="margin-top:8px"><span class="sec-title">Histórico de entradas</span></div>
     <div class="table-wrap" style="padding:0 14px"><div id="entradas-lista"></div></div>
@@ -926,6 +926,30 @@ function ultimaEntrada(nomeProd){
   return ents[0].data;
 }
 
+function filtrarSaidas(dias,motivo){
+  const dataIni=document.getElementById('ent-data-ini')?.value||'';
+  const dataFim=document.getElementById('ent-data-fim')?.value||'';
+  const usandoData=dataIni||dataFim;
+  const corte=new Date(); corte.setDate(corte.getDate()-dias);
+  return historico.filter(h=>{
+    if(h.tipo!=='saida') return false;
+    const ehVenda=h.obs&&h.obs.startsWith('Venda');
+    if(motivo==='venda' && !ehVenda) return false;
+    if(motivo==='outras' && ehVenda) return false;
+    const p=h.data.split('/');
+    if(p.length===3){
+      const d=new Date(`${p[2]}-${p[1]}-${p[0]}`);
+      if(usandoData){
+        if(dataIni && d<new Date(dataIni)) return false;
+        if(dataFim && d>new Date(dataFim)) return false;
+      } else {
+        if(d<corte) return false;
+      }
+    }
+    return true;
+  });
+}
+
 window.renderEntradas=function(){
   const filtros=document.getElementById('entradas-filtros');
   const opcoes=[{l:'7 dias',v:7},{l:'15 dias',v:15},{l:'30 dias',v:30},{l:'3 meses',v:90},{l:'6 meses',v:180}];
@@ -940,10 +964,28 @@ window.renderEntradas=function(){
   },0);
   const totalItens=lista.reduce((s,h)=>s+h.qtd,0);
 
+  const saidasVenda=filtrarSaidas(entradadPeriodo,'venda');
+  const saidasOutras=filtrarSaidas(entradadPeriodo,'outras');
+  let valorVendaReal=0, valorVendaCusto=0, semPrecoVenda=0;
+  saidasVenda.forEach(h=>{
+    const p=produtos.find(x=>x.nome===h.produto);
+    if(!p) return;
+    valorVendaCusto+=p.custo*h.qtd;
+    if(p.venda>0) valorVendaReal+=p.venda*h.qtd;
+    else semPrecoVenda++;
+  });
+  const valorOutras=saidasOutras.reduce((s,h)=>{
+    const p=produtos.find(x=>x.nome===h.produto);
+    return s+(p?p.custo*h.qtd:0);
+  },0);
+
   document.getElementById('entradas-resumo').innerHTML=`
     <div class="metric"><div class="metric-label">Total comprado</div><div class="metric-value" style="font-size:18px;color:#3B6D11">R$ ${totalGasto.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div><div class="metric-sub">no período</div></div>
     <div class="metric"><div class="metric-label">Unidades recebidas</div><div class="metric-value">${totalItens}</div><div class="metric-sub">itens</div></div>
-    <div class="metric"><div class="metric-label">Registros</div><div class="metric-value">${lista.length}</div><div class="metric-sub">entradas</div></div>`;
+    <div class="metric"><div class="metric-label">Registros</div><div class="metric-value">${lista.length}</div><div class="metric-sub">entradas</div></div>
+    <div class="metric"><div class="metric-label">Valor vendido</div><div class="metric-value" style="font-size:18px;color:#1a6fa8">R$ ${valorVendaReal.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div><div class="metric-sub">preço de venda · ${saidasVenda.length} registros${semPrecoVenda?` (${semPrecoVenda} sem preço cadastrado)`:''}</div></div>
+    <div class="metric"><div class="metric-label">Custo do que saiu por venda</div><div class="metric-value" style="font-size:18px;color:#639922">R$ ${valorVendaCusto.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div><div class="metric-sub">custo · lucro bruto ≈ R$ ${(valorVendaReal-valorVendaCusto).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
+    <div class="metric"><div class="metric-label">Valor de outras saídas</div><div class="metric-value" style="font-size:18px;color:#BA7517">R$ ${valorOutras.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div><div class="metric-sub">≈ custo · vencimento, avaria, brinde, ajuste · ${saidasOutras.length} registros</div></div>`;
 
   // Agrupado por categoria
   const porCat={};
@@ -1330,6 +1372,7 @@ window.openAddProdModal=function(){
       <div class="fg"><label>Estoque mínimo</label><input type="number" id="f-min" value="3" min="0"></div>
       <div class="fg"><label>Custo unitário (R$)</label><input type="number" id="f-custo" value="0" step="0.01" min="0"></div>
     </div>
+    <div class="fg"><label>Preço de venda (R$)</label><input type="number" id="f-venda" value="0" step="0.01" min="0"></div>
     <div class="fg"><label>Código de barras (EAN)</label><input type="text" id="f-ean" placeholder="Ex: 7891234567890"></div>
     <div style="background:#EAF3DE;border-radius:7px;padding:10px;font-size:11px;color:#27500A;margin-top:4px">
       💡 Após salvar o produto, clique em <strong>+ Lote</strong> para informar a quantidade e validade da primeira entrada.
@@ -1350,6 +1393,7 @@ window.openEditProdModal=function(prodId){
       <div class="fg"><label>Estoque mínimo</label><input type="number" id="f-min" value="${p.min}" min="0"></div>
       <div class="fg"><label>Custo unitário (R$)</label><input type="number" id="f-custo" value="${Number(p.custo).toFixed(2)}" step="0.01" min="0"></div>
     </div>
+    <div class="fg"><label>Preço de venda (R$)</label><input type="number" id="f-venda" value="${Number(p.venda||0).toFixed(2)}" step="0.01" min="0"></div>
     <div class="fg"><label>Código de barras (EAN)</label><input type="text" id="f-ean" value="${p.ean||''}"></div>
     <div style="border-top:1px solid #f0f0ea;margin-top:14px;padding-top:14px">
       <button onclick="arquivarProduto('${prodId}')" style="width:100%;padding:8px;border:1px solid ${p.arquivado?'#639922':'#E24B4A'};border-radius:7px;font-size:12px;cursor:pointer;background:${p.arquivado?'#f2f9ea':'#fff5f5'};color:${p.arquivado?'#27500A':'#791F1F'};font-family:Arial,sans-serif">
@@ -1437,6 +1481,7 @@ window.confirmModal=function(){
           cat: p.cat||'Outros',
           ean: p.ean||'',
           custo: p.custo||0,
+          venda: p.venda||0,
           min: p.min||3,
           saidas30: Array(30).fill(0)
         });
@@ -1471,6 +1516,7 @@ window.confirmModal=function(){
       nome, cat:document.getElementById('f-cat').value,
       min:parseInt(document.getElementById('f-min').value)||3,
       custo:parseFloat(document.getElementById('f-custo').value)||0,
+      venda:parseFloat(document.getElementById('f-venda').value)||0,
       ean:document.getElementById('f-ean').value.trim()||'',
       saidas30:Array(30).fill(0)
     });
@@ -1480,6 +1526,7 @@ window.confirmModal=function(){
       cat:document.getElementById('f-cat').value,
       min:parseInt(document.getElementById('f-min').value)||3,
       custo:parseFloat(document.getElementById('f-custo').value)||0,
+      venda:parseFloat(document.getElementById('f-venda').value)||0,
       ean:document.getElementById('f-ean').value.trim()||''
     });
   } else if(modalMode==='entrada'){
