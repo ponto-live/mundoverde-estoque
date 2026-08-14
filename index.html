@@ -312,7 +312,7 @@ tr.prod-row:hover td{background:#f5faf0}
           <th style="width:11%">Estoque</th>
           <th style="width:13%">Vendas/mês</th>
           <th style="width:15%">Cobertura</th>
-          <th style="width:14%">Dias sem venda</th>
+          <th style="width:14%">Dias sem venda ↓</th>
           <th style="width:17%">Situação</th>
         </tr></thead>
         <tbody id="giro-tbody"></tbody>
@@ -1145,6 +1145,7 @@ window.renderGiro=function(){
   } else if(giroFiltroEspecial==='nuncavendido'){
     lista=lista.filter(item=>item.qtd>0&&item.nuncaVendeu);
   }
+  lista=[...lista].sort((a,b)=>(b.diasSemVenda??-1)-(a.diasSemVenda??-1));
 
   const bannerLabels={
     'estagnados':'📈 Mostrando produtos sem giro há mais de 30 dias',
@@ -1526,28 +1527,54 @@ window.confirmModal=function(){
       const raw = JSON.parse(document.getElementById('f-import').value);
       const items = Array.isArray(raw) ? raw : Object.values(raw);
       if(!items.length){ alert('Nenhum produto encontrado.'); return; }
+      let criados=0, aproveitados=0;
       items.forEach(p => {
-        const prodRef = push(ref(db,'produtos2'), {
-          nome: p.nome,
-          cat: p.cat||'Outros',
-          ean: p.ean||'',
-          custo: p.custo||0,
-          venda: p.venda||0,
-          min: p.min||3,
-          saidas30: Array(30).fill(0)
-        });
-        // Se tiver quantidade e validade já cria o lote
-        if(p.qtd && p.qtd > 0){
-          push(ref(db,'lotes'), {
-            prodId: prodRef.key,
-            qtd: p.qtd,
-            validade: p.validade||'',
-            obs: p.obs||'Importação de nota',
-            ts: Date.now()
+        const ativos=produtos.filter(x=>!x.arquivado);
+        const nomeChave=(p.nome||'').trim().toLowerCase();
+        const eanChave=(p.ean||'').trim();
+        let existente=null;
+        if(eanChave) existente=ativos.find(x=>x.ean&&x.ean.trim()===eanChave);
+        if(!existente) existente=ativos.find(x=>x.nome.trim().toLowerCase()===nomeChave);
+
+        let prodId, nomeProd;
+        if(existente){
+          prodId=existente.id; nomeProd=existente.nome; aproveitados++;
+          // Preenche custo/venda/ean se o cadastro existente estiver zerado e a nota trouxer o dado
+          const upd={};
+          if((!existente.custo||existente.custo===0)&&p.custo) upd.custo=p.custo;
+          if((!existente.venda||existente.venda===0)&&p.venda) upd.venda=p.venda;
+          if(!existente.ean&&p.ean) upd.ean=p.ean;
+          if(Object.keys(upd).length) update(ref(db,`produtos2/${prodId}`),upd);
+        } else {
+          const prodRef = push(ref(db,'produtos2'), {
+            nome: p.nome,
+            cat: p.cat||'Outros',
+            ean: p.ean||'',
+            custo: p.custo||0,
+            venda: p.venda||0,
+            min: p.min||3,
+            saidas30: Array(30).fill(0)
           });
+          prodId=prodRef.key; nomeProd=p.nome; criados++;
+        }
+        // Se tiver quantidade e validade já cria o lote (ou soma no lote existente com mesma validade)
+        if(p.qtd && p.qtd > 0){
+          const val=p.validade||'';
+          const loteExist=val?lotes.find(l=>l.prodId===prodId&&l.validade===val):null;
+          if(loteExist){
+            update(ref(db,`lotes/${loteExist.id}`),{qtd:loteExist.qtd+p.qtd});
+          } else {
+            push(ref(db,'lotes'), {
+              prodId: prodId,
+              qtd: p.qtd,
+              validade: val,
+              obs: p.obs||'Importação de nota',
+              ts: Date.now()
+            });
+          }
           push(ref(db,'historico'), {
             data: hoje(),
-            produto: p.nome,
+            produto: nomeProd,
             tipo: 'entrada',
             qtd: p.qtd,
             obs: p.obs||'Importação de nota',
@@ -1555,7 +1582,7 @@ window.confirmModal=function(){
           });
         }
       });
-      alert(`✅ ${items.length} produto(s) importados com sucesso!`);
+      alert(`✅ ${items.length} produto(s) processados — ${criados} novo(s) cadastro(s), ${aproveitados} aproveitando cadastro já existente.`);
     } catch(e) {
       alert('Erro no formato JSON. Verifique e tente novamente.');
       return;
