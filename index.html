@@ -178,16 +178,17 @@ tr.prod-row:hover td{background:#f5faf0}
       <table>
         <thead>
           <tr>
-            <th style="width:28%">Produto</th>
-            <th style="width:9%">Total</th>
-            <th style="width:20%">Lotes / Próx. vencimento</th>
-            <th style="width:10%">Custo</th>
-            <th style="width:11%">Giro 30d</th>
+            <th style="width:25%">Produto</th>
+            <th style="width:8%">Total</th>
+            <th style="width:17%">Lotes / Próx. vencimento</th>
+            <th style="width:9%">Custo</th>
+            <th style="width:9%">Venda</th>
+            <th style="width:10%">Giro 30d</th>
             <th style="width:10%">Status</th>
             <th style="width:12%">Ações</th>
           </tr>
         </thead>
-        <tbody id="produtos-tbody"><tr><td colspan="7" style="text-align:center;padding:2rem;color:#aaa">🔄 Carregando...</td></tr></tbody>
+        <tbody id="produtos-tbody"><tr><td colspan="8" style="text-align:center;padding:2rem;color:#aaa">🔄 Carregando...</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -571,7 +572,7 @@ window.renderTabela=function(){
   } else {
     if(bannerEl) bannerEl.innerHTML='';
   }
-  if(!lista.length){tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:2rem;color:#aaa">Nenhum produto encontrado.</td></tr>`;return;}
+  if(!lista.length){tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:2rem;color:#aaa">Nenhum produto encontrado.</td></tr>`;return;}
 
   let html='';
   lista.forEach(p=>{
@@ -599,6 +600,7 @@ window.renderTabela=function(){
         </div>
       </td>
       <td style="font-size:12px">R$ ${Number(p.custo).toFixed(2)}</td>
+      <td style="font-size:12px">${p.venda?'R$ '+Number(p.venda).toFixed(2):'<span style="color:#aaa">—</span>'}</td>
       <td>
         <div style="font-size:10px;color:#888">${g} un/mês</div>
         <div class="giro-bar"><div class="giro-fill" style="width:${pct}%;background:${cor}"></div></div>
@@ -612,7 +614,7 @@ window.renderTabela=function(){
 
     // Linhas de lotes (expandidas)
     if(isExp && ls.length){
-      html+=`<tr><td colspan="7" style="padding:0;background:#f5fdf0">
+      html+=`<tr><td colspan="8" style="padding:0;background:#f5fdf0">
         <table style="width:100%;border-collapse:collapse">
           <thead><tr style="background:#e8f5d4">
             <td style="padding:5px 12px 5px 32px;font-size:10px;font-weight:700;color:#27500A;width:28%">LOTE</td>
