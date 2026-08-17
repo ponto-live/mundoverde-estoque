@@ -789,6 +789,10 @@ window.renderHistorico=function(){
         <div style="font-size:11px;color:#aaa">${h.data} · ${h.obs}</div>
       </div>
       <div style="font-size:13px;font-weight:700;color:${h.tipo==='entrada'?'#27500A':'#791F1F'}">${h.tipo==='entrada'?'+':'−'}${h.qtd} un</div>
+      <div style="display:flex;gap:4px;margin-left:8px;flex-shrink:0">
+        <button onclick="openEditMovModal('${h.id}')" title="Editar" style="border:1px solid #ddd;background:#fff;border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:12px">✏️</button>
+        <button onclick="excluirMovimento('${h.id}')" title="Excluir" style="border:1px solid #ddd;background:#fff;border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:12px">🗑️</button>
+      </div>
     </div>`).join('');
 }
 
@@ -1437,6 +1441,58 @@ window.openSaidaModal=function(prodId,loteId){
     <div class="fg"><label>Observação (opcional)</label><input type="text" id="f-obs" placeholder="Ex: Cliente João, cupom #123"></div>`);
 }
 
+let selHistId=null;
+
+window.openEditMovModal=function(histId){
+  modalMode='editmov'; selHistId=histId;
+  const h=historico.find(x=>x.id===histId);
+  if(!h) return;
+  const ehVenda=h.tipo==='saida';
+  const tipoAtual=(h.obs||'').split(' — ')[0];
+  const obsExtraAtual=(h.obs||'').includes(' — ')?h.obs.split(' — ').slice(1).join(' — '):'';
+  openModal(ehVenda?'✏️ Editar saída':'✏️ Editar entrada',`
+    <p style="font-size:12px;color:#666;margin-bottom:12px"><strong>${h.produto}</strong><br>Registrado em ${h.data}</p>
+    <div class="fg"><label>Quantidade</label><input type="number" id="f-qtd" value="${h.qtd}" min="1"></div>
+    ${ehVenda?`<div class="fg"><label>Tipo de saída</label><select id="f-tipo">
+      <option value="Venda"${tipoAtual==='Venda'?' selected':''}>🛒 Venda</option>
+      <option value="Descarte — vencimento"${tipoAtual==='Descarte — vencimento'?' selected':''}>🗑️ Descarte — vencimento</option>
+      <option value="Descarte — avaria"${tipoAtual==='Descarte — avaria'?' selected':''}>💔 Descarte — avaria</option>
+      <option value="Brinde / amostra"${tipoAtual==='Brinde / amostra'?' selected':''}>🎁 Brinde / amostra</option>
+      <option value="Ajuste de inventário"${tipoAtual==='Ajuste de inventário'?' selected':''}>📋 Ajuste de inventário</option>
+    </select></div>
+    <div class="fg"><label>Observação (opcional)</label><input type="text" id="f-obs" value="${obsExtraAtual.replace(/"/g,'&quot;')}" placeholder="Ex: Cliente João, cupom #123"></div>`
+    :`<div class="fg"><label>Observação (opcional)</label><input type="text" id="f-obs" value="${(h.obs||'').replace(/"/g,'&quot;')}"></div>`}
+    <div style="background:#FAEEDA;border-radius:7px;padding:9px;font-size:11px;color:#633806;margin-top:4px">
+      💡 Se a quantidade mudar, o estoque é ajustado automaticamente pela diferença (via lote de estorno/ajuste).
+    </div>`);
+}
+
+window.excluirMovimento=function(histId){
+  const h=historico.find(x=>x.id===histId);
+  if(!h) return;
+  if(!confirm(`Excluir este registro?\n\n${h.produto}\n${h.data} · ${h.obs}\n${h.tipo==='entrada'?'+':'−'}${h.qtd} un\n\nO estoque será ajustado de volta automaticamente.`)) return;
+  const p=produtos.find(x=>x.nome===h.produto);
+  if(p){
+    if(h.tipo==='saida'){
+      // Devolve a quantidade como um novo lote de estorno
+      push(ref(db,'lotes'),{prodId:p.id,qtd:h.qtd,validade:'',obs:`Estorno de saída excluída (${h.obs})`,ts:Date.now()});
+    } else if(h.tipo==='entrada'){
+      // Tenta remover do lote mais recente com estoque suficiente; senão avisa
+      const lotesProd=lotes.filter(l=>l.prodId===p.id).sort((a,b)=>b.ts-a.ts);
+      let restante=h.qtd;
+      for(const l of lotesProd){
+        if(restante<=0) break;
+        const usar=Math.min(l.qtd,restante);
+        const nova=l.qtd-usar;
+        if(nova===0) remove(ref(db,`lotes/${l.id}`)); else update(ref(db,`lotes/${l.id}`),{qtd:nova});
+        restante-=usar;
+      }
+      if(restante>0) alert(`Atenção: não havia estoque suficiente pra descontar totalmente essa entrada. Faltou ajustar ${restante} un manualmente.`);
+    }
+  }
+  remove(ref(db,`historico/${histId}`));
+}
+
 // Editar validade do lote
 window.openAjusteQtdModal=function(prodId,loteId){
   modalMode='ajusteqtd'; selProdId=prodId; selLoteId=loteId;
@@ -1662,6 +1718,56 @@ window.confirmModal=function(){
       validade:document.getElementById('f-val').value||'',
       obs:document.getElementById('f-obs').value||''
     });
+  } else if(modalMode==='editmov'){
+    const h=historico.find(x=>x.id===selHistId);
+    if(!h){closeModal();return;}
+    const novaQtd=parseInt(document.getElementById('f-qtd').value);
+    if(isNaN(novaQtd)||novaQtd<=0){alert('Informe uma quantidade válida.');return;}
+    const p=produtos.find(x=>x.nome===h.produto);
+    let novoObs=h.obs;
+    if(h.tipo==='saida'){
+      const tipo=document.getElementById('f-tipo').value;
+      const obsExtra=document.getElementById('f-obs').value.trim();
+      novoObs=tipo+(obsExtra?' — '+obsExtra:'');
+    } else {
+      novoObs=document.getElementById('f-obs').value.trim()||h.obs;
+    }
+    const delta=novaQtd-h.qtd; // positivo = aumentou a qtd do movimento
+    if(delta!==0 && p){
+      if(h.tipo==='saida'){
+        // Saída maior que antes → precisa tirar mais estoque; saída menor → devolve a diferença
+        if(delta>0){
+          const lotesProd=lotes.filter(l=>l.prodId===p.id).sort((a,b)=>b.ts-a.ts);
+          let restante=delta;
+          for(const l of lotesProd){
+            if(restante<=0) break;
+            const usar=Math.min(l.qtd,restante);
+            const nova=l.qtd-usar;
+            if(nova===0) remove(ref(db,`lotes/${l.id}`)); else update(ref(db,`lotes/${l.id}`),{qtd:nova});
+            restante-=usar;
+          }
+          if(restante>0) alert(`Atenção: não havia estoque suficiente pra cobrir o aumento. Faltou ${restante} un.`);
+        } else {
+          push(ref(db,'lotes'),{prodId:p.id,qtd:Math.abs(delta),validade:'',obs:'Estorno de ajuste de saída',ts:Date.now()});
+        }
+      } else if(h.tipo==='entrada'){
+        if(delta>0){
+          push(ref(db,'lotes'),{prodId:p.id,qtd:delta,validade:'',obs:'Ajuste de entrada editada',ts:Date.now()});
+        } else {
+          const lotesProd=lotes.filter(l=>l.prodId===p.id).sort((a,b)=>b.ts-a.ts);
+          let restante=Math.abs(delta);
+          for(const l of lotesProd){
+            if(restante<=0) break;
+            const usar=Math.min(l.qtd,restante);
+            const nova=l.qtd-usar;
+            if(nova===0) remove(ref(db,`lotes/${l.id}`)); else update(ref(db,`lotes/${l.id}`),{qtd:nova});
+            restante-=usar;
+          }
+          if(restante>0) alert(`Atenção: não havia estoque suficiente pra cobrir a redução. Faltou ${restante} un.`);
+        }
+      }
+    }
+    update(ref(db,`historico/${selHistId}`),{qtd:novaQtd,obs:novoObs});
   }
   closeModal();
 }
