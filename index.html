@@ -313,8 +313,8 @@ tr.prod-row:hover td{background:#f5faf0}
           <th style="width:9%">Estoque</th>
           <th style="width:11%">Vendas/mês</th>
           <th style="width:12%">Cobertura</th>
-          <th style="width:12%">Dias sem venda ↓</th>
-          <th style="width:14%">Validade</th>
+          <th style="width:12%">Dias sem venda</th>
+          <th style="width:14%">Validade ↑</th>
           <th style="width:16%">Situação</th>
         </tr></thead>
         <tbody id="giro-tbody"></tbody>
@@ -1154,7 +1154,11 @@ window.renderGiro=function(){
   } else if(giroFiltroEspecial==='nuncavendido'){
     lista=lista.filter(item=>item.qtd>0&&item.nuncaVendeu);
   }
-  lista=[...lista].sort((a,b)=>(b.diasSemVenda??-1)-(a.diasSemVenda??-1));
+  lista=[...lista].sort((a,b)=>{
+    const va=a.diasParaVencer===null?Infinity:a.diasParaVencer;
+    const vb=b.diasParaVencer===null?Infinity:b.diasParaVencer;
+    return va-vb;
+  });
 
   const bannerLabels={
     'estagnados':'📈 Mostrando produtos sem giro há mais de 30 dias',
