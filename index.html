@@ -313,8 +313,8 @@ tr.prod-row:hover td{background:#f5faf0}
           <th style="width:9%">Estoque</th>
           <th style="width:11%">Vendas/mês</th>
           <th style="width:12%">Cobertura</th>
-          <th style="width:12%">Dias sem venda</th>
-          <th style="width:14%">Validade ↑</th>
+          <th style="width:12%;cursor:pointer;user-select:none" onclick="setGiroOrdenacao('semvenda')" id="th-semvenda">Dias sem venda</th>
+          <th style="width:14%;cursor:pointer;user-select:none" onclick="setGiroOrdenacao('validade')" id="th-validade">Validade</th>
           <th style="width:16%">Situação</th>
         </tr></thead>
         <tbody id="giro-tbody"></tbody>
@@ -1052,6 +1052,7 @@ window.setEntradasPeriodo=function(d){
 // ── GIRO DE ESTOQUE ───────────────────────────────────────────────
 let giroPage=1;
 let giroFiltroEspecial=null;
+let giroOrdenacao='validade'; // 'validade' ou 'semvenda'
 const giroPorPagina=10;
 
 function calcularVendasGiro(){
@@ -1078,6 +1079,12 @@ function calcularVendasGiro(){
     vendas[h.produto]+=h.qtd;
   });
   return{vendas,usandoHist:Object.keys(vendas).length>0,usandoData};
+}
+
+window.setGiroOrdenacao=function(modo){
+  giroOrdenacao=modo;
+  giroPage=1;
+  renderGiro();
 }
 
 window.filtrarGiroPor=function(tipo){
@@ -1154,11 +1161,20 @@ window.renderGiro=function(){
   } else if(giroFiltroEspecial==='nuncavendido'){
     lista=lista.filter(item=>item.qtd>0&&item.nuncaVendeu);
   }
-  lista=[...lista].sort((a,b)=>{
-    const va=a.diasParaVencer===null?Infinity:a.diasParaVencer;
-    const vb=b.diasParaVencer===null?Infinity:b.diasParaVencer;
-    return va-vb;
-  });
+  if(giroOrdenacao==='validade'){
+    lista=[...lista].sort((a,b)=>{
+      const va=a.diasParaVencer===null?Infinity:a.diasParaVencer;
+      const vb=b.diasParaVencer===null?Infinity:b.diasParaVencer;
+      return va-vb;
+    });
+  } else {
+    lista=[...lista].sort((a,b)=>(b.diasSemVenda??-1)-(a.diasSemVenda??-1));
+  }
+  const th1=document.getElementById('th-semvenda'), th2=document.getElementById('th-validade');
+  if(th1&&th2){
+    th1.innerHTML='Dias sem venda'+(giroOrdenacao==='semvenda'?' ↓':'');
+    th2.innerHTML='Validade'+(giroOrdenacao==='validade'?' ↑':'');
+  }
 
   const bannerLabels={
     'estagnados':'📈 Mostrando produtos sem giro há mais de 30 dias',
