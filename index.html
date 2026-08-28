@@ -309,12 +309,13 @@ tr.prod-row:hover td{background:#f5faf0}
     <div class="table-wrap" style="overflow-x:auto">
       <table style="min-width:500px">
         <thead><tr>
-          <th style="width:30%">Produto</th>
-          <th style="width:11%">Estoque</th>
-          <th style="width:13%">Vendas/mês</th>
-          <th style="width:15%">Cobertura</th>
-          <th style="width:14%">Dias sem venda ↓</th>
-          <th style="width:17%">Situação</th>
+          <th style="width:26%">Produto</th>
+          <th style="width:9%">Estoque</th>
+          <th style="width:11%">Vendas/mês</th>
+          <th style="width:12%">Cobertura</th>
+          <th style="width:12%">Dias sem venda ↓</th>
+          <th style="width:14%">Validade</th>
+          <th style="width:16%">Situação</th>
         </tr></thead>
         <tbody id="giro-tbody"></tbody>
       </table>
@@ -1141,7 +1142,9 @@ window.renderGiro=function(){
       diasSemVenda=Math.floor((hojeDt-primeirasEntradas[p.nome])/86400000);
       nuncaVendeu=true;
     }
-    return{p,g:gMes,qtd,cobertura,diasSemVenda,nuncaVendeu};
+    const loteProx=lotesDosProd(p.id)[0];
+    const diasParaVencer=(loteProx&&loteProx.validade)?Math.ceil((new Date(loteProx.validade+'T12:00:00')-hojeDt)/86400000):null;
+    return{p,g:gMes,qtd,cobertura,diasSemVenda,nuncaVendeu,diasParaVencer};
   }).filter(item=>!busca||item.p.nome.toLowerCase().includes(busca));
   listaCompleta.sort((a,b)=>b.g-a.g);
 
@@ -1213,7 +1216,7 @@ window.renderGiro=function(){
   const paginado=lista.slice((giroPage-1)*giroPorPagina, giroPage*giroPorPagina);
 
   const tbody=document.getElementById('giro-tbody');
-  tbody.innerHTML=paginado.map(({p,g,qtd,cobertura,diasSemVenda,nuncaVendeu})=>{
+  tbody.innerHTML=paginado.map(({p,g,qtd,cobertura,diasSemVenda,nuncaVendeu,diasParaVencer})=>{
     const sit=situacao(cobertura,g);
     const cobStr=cobertura>=999?'∞':cobertura+'d';
     const cobCor=cobertura>=90?'#A32D2D':cobertura<=15?'#BA7517':'#3B6D11';
@@ -1221,12 +1224,16 @@ window.renderGiro=function(){
     const dsvCor=diasSemVenda===null?'#aaa':diasSemVenda>=30?'#A32D2D':diasSemVenda>=15?'#BA7517':'#3B6D11';
     const dsvPeso=(diasSemVenda!==null&&diasSemVenda>=15)?'font-weight:700':'';
     const dsvTitle=diasSemVenda===null?'Sem data de entrada registrada e nunca vendido':(nuncaVendeu?'Nunca vendido — dias desde a entrada no estoque':'Dias desde a última venda registrada');
+    const valStr=diasParaVencer===null?'—':diasParaVencer<0?'Vencido':diasParaVencer+'d';
+    const valCor=diasParaVencer===null?'#aaa':diasParaVencer<0?'#A32D2D':diasParaVencer<=30?'#A32D2D':diasParaVencer<=60?'#BA7517':'#3B6D11';
+    const valPeso=(diasParaVencer!==null&&diasParaVencer<=60)?'font-weight:700':'';
     return `<tr>
       <td><div style="font-weight:700;font-size:12px">${p.nome}</div><div style="font-size:10px;color:#aaa">${p.cat}</div></td>
       <td style="font-weight:700">${qtd} un</td>
       <td>${g} un/mês</td>
       <td style="font-weight:700;color:${cobCor}" title="Dias que o estoque atual vai durar">${cobStr}</td>
       <td style="color:${dsvCor};${dsvPeso}" title="${dsvTitle}">${dsvStr}</td>
+      <td style="color:${valCor};${valPeso}" title="Dias até o vencimento do lote mais próximo">${valStr}</td>
       <td><span class="badge ${sit.cls}">${sit.label}</span></td>
     </tr>`;
   }).join('');
