@@ -160,6 +160,7 @@ tr.prod-row:hover td{background:#f5faf0}
       <div style="display:flex;gap:8px;align-items:center">
         <button id="btn-arq" style="padding:6px 12px;border:1px solid #ddd;border-radius:7px;font-size:11px;cursor:pointer;background:#fff;color:#888;font-family:Arial,sans-serif" onclick="toggleArquivados()">📦 Ver arquivados</button>
         <button style="padding:6px 12px;border:1px solid #ddd;border-radius:7px;font-size:11px;cursor:pointer;background:#fff;color:#888;font-family:Arial,sans-serif" onclick="verificarDuplicados()">🔍 Verificar duplicados</button>
+        <button style="padding:6px 12px;border:1px solid #ddd;border-radius:7px;font-size:11px;cursor:pointer;background:#fff;color:#888;font-family:Arial,sans-serif" onclick="verificarSemValidade()">📅 Sem validade</button>
         <button style="padding:7px 16px;background:#1a6fa8;color:#fff;border:none;border-radius:7px;font-size:12px;cursor:pointer;font-family:Arial,sans-serif;font-weight:600" onclick="openImportModal()">📋 Importar nota</button>
         <button class="btn-green" onclick="openAddProdModal()">+ Novo produto</button>
       </div>
@@ -1544,6 +1545,33 @@ window.openValLoteModal=function(loteId){
 }
 
 // ── CONFIRM ───────────────────────────────────────────────────────
+window.verificarSemValidade=function(){
+  modalMode='valcheck';
+  const ativos=produtos.filter(p=>!p.arquivado);
+  const semVal=[];
+  ativos.forEach(p=>{
+    lotesDosProd(p.id).forEach(l=>{
+      if(!l.validade) semVal.push({p,l});
+    });
+  });
+
+  if(!semVal.length){
+    openModal('📅 Produtos sem validade','<div class="empty-state">✅ Todos os lotes ativos têm validade cadastrada.</div>');
+    return;
+  }
+
+  const corpo=`
+    <div style="font-size:12px;color:#666;margin-bottom:12px">Encontrados <strong>${semVal.length}</strong> lote(s) sem validade cadastrada:</div>
+    ${semVal.map(({p,l})=>`<div style="border:1px solid #FAC775;background:#FAEEDA;border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-weight:700;font-size:13px">${p.nome}</div>
+        <div style="font-size:11px;color:#888">${p.cat} · ${l.qtd} un ${l.obs?'· '+l.obs:''}</div>
+      </div>
+      <button onclick="closeModal();openValLoteModal('${l.id}')" style="border:1px solid #ddd;background:#fff;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer;font-weight:600;white-space:nowrap">📅 Definir validade</button>
+    </div>`).join('')}`;
+  openModal('📅 Produtos sem validade',corpo);
+}
+
 window.verificarDuplicados=function(){
   modalMode='dupcheck';
   const ativos=produtos.filter(p=>!p.arquivado);
