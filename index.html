@@ -43,6 +43,15 @@ body{font-family:Arial,sans-serif;background:#f5f5f0;color:#1a1a1a;min-height:10
 .sec-title{font-size:14px;font-weight:700}
 .btn-green{padding:7px 16px;background:#3B6D11;color:#fff;border:none;border-radius:7px;font-size:12px;cursor:pointer;font-family:Arial,sans-serif;font-weight:600}
 .btn-green:hover{background:#27500A}
+.toolbtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:104px;min-height:56px;padding:8px 6px;border-radius:9px;border:1px solid #ddd;background:#fff;color:#555;font-family:Arial,sans-serif;font-size:11px;font-weight:600;cursor:pointer;text-align:center;line-height:1.25}
+.toolbtn:hover{background:#f5f5f0}
+.toolbtn .ic{font-size:17px;line-height:1}
+.toolbtn-primary{background:#1a6fa8;color:#fff;border-color:#1a6fa8}
+.toolbtn-primary:hover{background:#155a89}
+.toolbtn-purple{background:#6b3fa0;color:#fff;border-color:#6b3fa0}
+.toolbtn-purple:hover{background:#57327f}
+.toolbtn-green{background:#3B6D11;color:#fff;border-color:#3B6D11}
+.toolbtn-green:hover{background:#27500A}
 .alert-box{border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:9px;display:flex;align-items:flex-start;gap:8px;border:1px solid}
 .alert-info{background:#E6F1FB;color:#0C447C;border-color:#B5D4F4}
 .alert-warn{background:#FAEEDA;color:#633806;border-color:#FAC775}
@@ -155,17 +164,17 @@ tr.prod-row:hover td{background:#f5faf0}
       </div>
     </div>
     <div id="alertas"></div>
-    <div class="sec-header">
+    <div class="sec-header" style="align-items:flex-start;flex-wrap:wrap;gap:12px">
       <span class="sec-title">📦 Produtos em estoque</span>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button id="btn-arq" style="padding:6px 12px;border:1px solid #ddd;border-radius:7px;font-size:11px;cursor:pointer;background:#fff;color:#888;font-family:Arial,sans-serif" onclick="toggleArquivados()">📦 Ver arquivados</button>
-        <button style="padding:6px 12px;border:1px solid #ddd;border-radius:7px;font-size:11px;cursor:pointer;background:#fff;color:#888;font-family:Arial,sans-serif" onclick="verificarDuplicados()">🔍 Verificar duplicados</button>
-        <button style="padding:6px 12px;border:1px solid #ddd;border-radius:7px;font-size:11px;cursor:pointer;background:#fff;color:#888;font-family:Arial,sans-serif" onclick="verificarSemValidade()">📅 Sem validade</button>
-        <button style="padding:6px 12px;border:1px solid #ddd;border-radius:7px;font-size:11px;cursor:pointer;background:#fff;color:#888;font-family:Arial,sans-serif" onclick="verificarSemPreco()">💲 Sem preço de venda</button>
-        <button style="padding:6px 12px;border:1px solid #ddd;border-radius:7px;font-size:11px;cursor:pointer;background:#fff;color:#888;font-family:Arial,sans-serif" onclick="verificarSemCusto()">🏷️ Sem custo</button>
-        <button style="padding:7px 16px;background:#1a6fa8;color:#fff;border:none;border-radius:7px;font-size:12px;cursor:pointer;font-family:Arial,sans-serif;font-weight:600" onclick="openImportModal()">📋 Importar nota</button>
-        <button style="padding:7px 16px;background:#6b3fa0;color:#fff;border:none;border-radius:7px;font-size:12px;cursor:pointer;font-family:Arial,sans-serif;font-weight:600" onclick="openImportInventarioModal()">🧮 Importar inventário</button>
-        <button class="btn-green" onclick="openAddProdModal()">+ Novo produto</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button id="btn-arq" class="toolbtn" onclick="toggleArquivados()"><span class="ic">📦</span>Ver arquivados</button>
+        <button class="toolbtn" onclick="verificarDuplicados()"><span class="ic">🔍</span>Verificar duplicados</button>
+        <button class="toolbtn" onclick="verificarSemValidade()"><span class="ic">📅</span>Sem validade</button>
+        <button class="toolbtn" onclick="verificarSemPreco()"><span class="ic">💲</span>Sem preço de venda</button>
+        <button class="toolbtn" onclick="verificarSemCusto()"><span class="ic">🏷️</span>Sem custo</button>
+        <button class="toolbtn toolbtn-primary" onclick="openImportModal()"><span class="ic">📋</span>Importar nota</button>
+        <button class="toolbtn toolbtn-purple" onclick="openImportInventarioModal()"><span class="ic">🧮</span>Importar inventário</button>
+        <button class="toolbtn toolbtn-green" onclick="openAddProdModal()"><span class="ic">➕</span>Novo produto</button>
       </div>
     </div>
     <input type="text" class="search-bar" id="search-input" placeholder="🔍 Buscar produto..." style="margin-bottom:8px">
@@ -380,7 +389,7 @@ let mostrarArquivados = false;
 
 window.toggleArquivados=function(){
   mostrarArquivados=!mostrarArquivados;
-  document.getElementById('btn-arq').textContent=mostrarArquivados?'✅ Ativos':'📦 Ver arquivados';
+  document.getElementById('btn-arq').innerHTML=mostrarArquivados?'<span class="ic">✅</span>Ativos':'<span class="ic">📦</span>Ver arquivados';
   document.getElementById('btn-arq').style.color=mostrarArquivados?'#3B6D11':'#888';
   document.getElementById('btn-arq').style.borderColor=mostrarArquivados?'#3B6D11':'#ddd';
   renderTabela();
