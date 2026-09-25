@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head> 
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mundo Verde — Estoque</title>
@@ -161,7 +161,9 @@ tr.prod-row:hover td{background:#f5faf0}
         <button id="btn-arq" style="padding:6px 12px;border:1px solid #ddd;border-radius:7px;font-size:11px;cursor:pointer;background:#fff;color:#888;font-family:Arial,sans-serif" onclick="toggleArquivados()">📦 Ver arquivados</button>
         <button style="padding:6px 12px;border:1px solid #ddd;border-radius:7px;font-size:11px;cursor:pointer;background:#fff;color:#888;font-family:Arial,sans-serif" onclick="verificarDuplicados()">🔍 Verificar duplicados</button>
         <button style="padding:6px 12px;border:1px solid #ddd;border-radius:7px;font-size:11px;cursor:pointer;background:#fff;color:#888;font-family:Arial,sans-serif" onclick="verificarSemValidade()">📅 Sem validade</button>
+        <button style="padding:6px 12px;border:1px solid #ddd;border-radius:7px;font-size:11px;cursor:pointer;background:#fff;color:#888;font-family:Arial,sans-serif" onclick="verificarSemPreco()">💲 Sem preço de venda</button>
         <button style="padding:7px 16px;background:#1a6fa8;color:#fff;border:none;border-radius:7px;font-size:12px;cursor:pointer;font-family:Arial,sans-serif;font-weight:600" onclick="openImportModal()">📋 Importar nota</button>
+        <button style="padding:7px 16px;background:#6b3fa0;color:#fff;border:none;border-radius:7px;font-size:12px;cursor:pointer;font-family:Arial,sans-serif;font-weight:600" onclick="openImportInventarioModal()">🧮 Importar inventário</button>
         <button class="btn-green" onclick="openAddProdModal()">+ Novo produto</button>
       </div>
     </div>
@@ -1374,6 +1376,36 @@ document.getElementById('modal-bg').addEventListener('click',function(e){if(e.ta
 
 // Novo produto
 // Importar nota
+window.openImportInventarioModal=function(){
+  modalMode='impinv';
+  const hoje2=hoje();
+  openModal('🧮 Importar contagem de inventário',`
+    <p style="font-size:12px;color:#666;margin-bottom:8px">Cole abaixo a lista da contagem completa (JSON gerado pelo Claude a partir da sua planilha). O sistema ajusta automaticamente o estoque de cada produto pra bater com a quantidade contada.</p>
+    <div style="background:#FAEEDA;border-radius:7px;padding:9px;font-size:11px;color:#633806;margin-bottom:10px">
+      💡 Produtos já cadastrados: o estoque é ajustado (pra mais ou pra menos) via "Ajuste de inventário" — não conta como venda.<br>
+      💡 Produtos que não existem no cadastro ainda: são criados automaticamente com a quantidade contada.
+    </div>
+    <div class="fg"><label>Lista da contagem (JSON)</label>
+    <textarea id="f-impinv" rows="8" style="width:100%;font-size:11px;padding:8px;border:1px solid #ddd;border-radius:7px;font-family:monospace;resize:vertical" placeholder='Cole aqui o JSON gerado pelo Claude...'></textarea></div>
+    <div id="impinv-preview" style="margin-top:10px"></div>`);
+  document.getElementById('f-impinv').addEventListener('input', previewImportInventario);
+}
+
+function previewImportInventario(){
+  const preview = document.getElementById('impinv-preview');
+  try {
+    const lista = JSON.parse(document.getElementById('f-impinv').value);
+    const items = Array.isArray(lista) ? lista : Object.values(lista);
+    const totalUn = items.reduce((s,i)=>s+(i.qtd||0),0);
+    preview.innerHTML = `<div style="background:#EAF3DE;border-radius:7px;padding:10px;font-size:11px;color:#27500A">
+      ✅ <strong>${items.length} produto(s)</strong> na contagem, totalizando <strong>${totalUn} unidades</strong>. Pronto pra processar.
+    </div>`;
+  } catch(e) {
+    if(document.getElementById('f-impinv').value.length > 5)
+      preview.innerHTML = `<div style="background:#FCEBEB;border-radius:7px;padding:10px;font-size:11px;color:#791F1F">❌ JSON inválido — verifique o formato</div>`;
+  }
+}
+
 window.openImportModal=function(){
   modalMode='import';
   openModal('📋 Importar produtos da nota',`
@@ -1545,6 +1577,29 @@ window.openValLoteModal=function(loteId){
 }
 
 // ── CONFIRM ───────────────────────────────────────────────────────
+window.verificarSemPreco=function(){
+  modalMode='precocheck';
+  const ativos=produtos.filter(p=>!p.arquivado);
+  const semPreco=ativos.filter(p=>!p.venda||p.venda===0)
+    .sort((a,b)=>qtdTotal(b.id)-qtdTotal(a.id));
+
+  if(!semPreco.length){
+    openModal('💲 Produtos sem preço de venda','<div class="empty-state">✅ Todos os produtos ativos têm preço de venda cadastrado.</div>');
+    return;
+  }
+
+  const corpo=`
+    <div style="font-size:12px;color:#666;margin-bottom:12px">Encontrados <strong>${semPreco.length}</strong> produto(s) sem preço de venda cadastrado:</div>
+    ${semPreco.map(p=>`<div style="border:1px solid #FAC775;background:#FAEEDA;border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-weight:700;font-size:13px">${p.nome}</div>
+        <div style="font-size:11px;color:#888">${p.cat} · ${qtdTotal(p.id)} un em estoque · custo R$ ${Number(p.custo||0).toFixed(2)}</div>
+      </div>
+      <button onclick="closeModal();openEditProdModal('${p.id}')" style="border:1px solid #ddd;background:#fff;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer;font-weight:600;white-space:nowrap">💲 Definir preço</button>
+    </div>`).join('')}`;
+  openModal('💲 Produtos sem preço de venda',corpo);
+}
+
 window.verificarSemValidade=function(){
   modalMode='valcheck';
   const ativos=produtos.filter(p=>!p.arquivado);
@@ -1635,6 +1690,61 @@ window.confirmModal=function(){
       concluida:false,
       ts:Date.now()
     });
+  } else if(modalMode==='impinv'){
+    try {
+      const raw = JSON.parse(document.getElementById('f-impinv').value);
+      const items = Array.isArray(raw) ? raw : Object.values(raw);
+      if(!items.length){ alert('Nenhum produto encontrado.'); return; }
+      const hoje2=hoje();
+      const ativos=produtos.filter(x=>!x.arquivado);
+      let ajustados=0, semMudanca=0, criados=0;
+      items.forEach(item=>{
+        const nomeChave=(item.nome||'').trim().toLowerCase();
+        const eanChave=(item.ean||'').trim();
+        let existente=null;
+        if(eanChave) existente=ativos.find(x=>x.ean&&x.ean.trim()===eanChave);
+        if(!existente) existente=ativos.find(x=>x.nome.trim().toLowerCase()===nomeChave);
+
+        if(existente){
+          const atual=qtdTotal(existente.id);
+          const contado=item.qtd||0;
+          const delta=contado-atual;
+          if((!existente.custo||existente.custo===0)&&item.custo) update(ref(db,`produtos2/${existente.id}`),{custo:item.custo});
+          if(delta===0){ semMudanca++; return; }
+          if(delta>0){
+            push(ref(db,'lotes'),{prodId:existente.id,qtd:delta,validade:'',obs:`Ajuste de inventário (contagem ${hoje2})`,ts:Date.now()});
+            push(ref(db,'historico'),{data:hoje2,produto:existente.nome,tipo:'entrada',qtd:delta,obs:`Ajuste de inventário (contagem ${hoje2})`,ts:Date.now()});
+          } else {
+            let restante=Math.abs(delta);
+            const lotesProd=lotes.filter(l=>l.prodId===existente.id).sort((a,b)=>b.qtd-a.qtd);
+            for(const l of lotesProd){
+              if(restante<=0) break;
+              const usar=Math.min(l.qtd,restante);
+              const nova=l.qtd-usar;
+              if(nova===0) remove(ref(db,`lotes/${l.id}`)); else update(ref(db,`lotes/${l.id}`),{qtd:nova});
+              restante-=usar;
+            }
+            push(ref(db,'historico'),{data:hoje2,produto:existente.nome,tipo:'saida',qtd:Math.abs(delta)-restante,obs:'Ajuste de inventário',ts:Date.now()});
+          }
+          ajustados++;
+        } else {
+          const prodRef = push(ref(db,'produtos2'), {
+            nome: item.nome, cat: item.cat||'Alimentos', ean: item.ean||'',
+            custo: item.custo||0, venda: item.venda||0, min: item.min||3,
+            saidas30: Array(30).fill(0)
+          });
+          if(item.qtd>0){
+            push(ref(db,'lotes'),{prodId:prodRef.key,qtd:item.qtd,validade:'',obs:`Inventário — novo cadastro (contagem ${hoje2})`,ts:Date.now()});
+            push(ref(db,'historico'),{data:hoje2,produto:item.nome,tipo:'entrada',qtd:item.qtd,obs:`Inventário — novo cadastro (contagem ${hoje2})`,ts:Date.now()});
+          }
+          criados++;
+        }
+      });
+      alert(`✅ Inventário processado!\n\n${ajustados} produto(s) com estoque ajustado\n${semMudanca} produto(s) já estavam corretos\n${criados} produto(s) novo(s) cadastrados`);
+    } catch(e) {
+      alert('Erro no formato JSON. Verifique e tente novamente.');
+      return;
+    }
   } else if(modalMode==='import'){
     try {
       const raw = JSON.parse(document.getElementById('f-import').value);
