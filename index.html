@@ -463,6 +463,13 @@ onValue(ref(db,'tarefas'), snap=>{
   if(document.getElementById('tab-tarefas').classList.contains('active')) renderTarefas();
 });
 
+let ajusteBaselineDate=null; // dd/mm/yyyy — ajustes até essa data (inclusive) não contam no card "Ajuste"
+onValue(ref(db,'config/ajusteBaselineDate'), snap=>{
+  ajusteBaselineDate=snap.val()||null;
+  if(document.getElementById('tab-entradas').classList.contains('active')) renderEntradas();
+});
+
+
 let entradadPeriodo=30;
 let giroPeriodo=30;
 
@@ -995,12 +1002,10 @@ window.renderEntradas=function(){
     if(p.venda>0) valorVendaReal+=p.venda*h.qtd;
     else semPrecoVenda++;
   });
-  const valorOutras=saidasOutras.reduce((s,h)=>{
-    const p=produtos.find(x=>x.nome===h.produto);
-    return s+(p?p.custo*h.qtd:0);
-  },0);
   const outrasPorMotivo={vencimento:0,avaria:0,brinde:0,ajuste:0};
   const regsPorMotivo={vencimento:0,avaria:0,brinde:0,ajuste:0};
+  const parseData=d=>{const p=d.split('/');return p.length===3?new Date(`${p[2]}-${p[1]}-${p[0]}`):null;};
+  const baselineDt=ajusteBaselineDate?parseData(ajusteBaselineDate):null;
   saidasOutras.forEach(h=>{
     const p=produtos.find(x=>x.nome===h.produto);
     const valor=p?p.custo*h.qtd:0;
@@ -1009,9 +1014,15 @@ window.renderEntradas=function(){
     if(obs.startsWith('Descarte — vencimento')) motivo='vencimento';
     else if(obs.startsWith('Descarte — avaria')) motivo='avaria';
     else if(obs.startsWith('Brinde')) motivo='brinde';
+    if(motivo==='ajuste' && baselineDt){
+      const dh=parseData(h.data);
+      if(dh && dh<=baselineDt) return; // zerado — não conta o que já foi corrigido na recontagem
+    }
     outrasPorMotivo[motivo]+=valor;
     regsPorMotivo[motivo]++;
   });
+  const valorOutras=Object.values(outrasPorMotivo).reduce((s,v)=>s+v,0);
+  const totalRegsOutras=Object.values(regsPorMotivo).reduce((s,v)=>s+v,0);
 
   const ativosEnt=produtos.filter(p=>!p.arquivado);
   const totalUnidadesEstoque=ativosEnt.reduce((s,p)=>s+qtdTotal(p.id),0);
@@ -1026,12 +1037,16 @@ window.renderEntradas=function(){
     <div class="metric" style="grid-column:span 2">
       <div class="metric-label">Valor de outras saídas</div>
       <div class="metric-value" style="font-size:18px;color:#BA7517">R$ ${valorOutras.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
-      <div class="metric-sub" style="margin-bottom:6px">≈ custo · ${saidasOutras.length} registros</div>
+      <div class="metric-sub" style="margin-bottom:6px">≈ custo · ${totalRegsOutras} registros</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:6px;font-size:11px">
         <div>🗓️ Vencimento<br><strong>R$ ${outrasPorMotivo.vencimento.toLocaleString('pt-BR',{minimumFractionDigits:2})}</strong> <span style="color:#aaa">(${regsPorMotivo.vencimento})</span></div>
         <div>💔 Avaria<br><strong>R$ ${outrasPorMotivo.avaria.toLocaleString('pt-BR',{minimumFractionDigits:2})}</strong> <span style="color:#aaa">(${regsPorMotivo.avaria})</span></div>
         <div>🎁 Brinde/amostra<br><strong>R$ ${outrasPorMotivo.brinde.toLocaleString('pt-BR',{minimumFractionDigits:2})}</strong> <span style="color:#aaa">(${regsPorMotivo.brinde})</span></div>
         <div>📋 Ajuste<br><strong>R$ ${outrasPorMotivo.ajuste.toLocaleString('pt-BR',{minimumFractionDigits:2})}</strong> <span style="color:#aaa">(${regsPorMotivo.ajuste})</span></div>
+      </div>
+      <div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="font-size:10px;color:#aaa">${ajusteBaselineDate?`Ajuste contando a partir de ${ajusteBaselineDate}`:'Ajuste contando desde o início do histórico'}</span>
+        <button onclick="zerarAjusteHoje()" style="border:1px solid #ddd;background:#fff;border-radius:6px;padding:3px 10px;font-size:10px;cursor:pointer;color:#666">🔄 Zerar ajuste a partir de hoje</button>
       </div>
     </div>`;
 
@@ -1614,6 +1629,12 @@ window.openValLoteModal=function(loteId){
 }
 
 // ── CONFIRM ───────────────────────────────────────────────────────
+window.zerarAjusteHoje=function(){
+  const hoje2=hoje();
+  if(!confirm(`Zerar o valor de "Ajuste" a partir de hoje (${hoje2})?\n\nTodo ajuste registrado até hoje (incluindo a recontagem de inventário) deixa de contar no card. Só ajustes feitos a partir de agora vão aparecer.`)) return;
+  set(ref(db,'config/ajusteBaselineDate'), hoje2);
+}
+
 window.verificarSemCusto=function(){
   modalMode='custocheck';
   const ativos=produtos.filter(p=>!p.arquivado);
