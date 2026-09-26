@@ -208,14 +208,26 @@ tr.prod-row:hover td{background:#f5faf0}
 
   <div id="tab-movimentos" class="tab-content">
     <div class="sec-header"><span class="sec-title">📋 Histórico de movimentações</span></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
-      <div id="mov-card-vendidos" style="background:#fff;border:1px solid #e0e0d8;border-radius:10px;padding:16px;text-align:center;cursor:pointer" onclick="filtrarMovPor('venda')" title="Clique para ver quais produtos">
-        <div style="font-size:12px;color:#888;margin-bottom:6px" id="mov-vendidos-label">Produtos vendidos no mês</div>
-        <div id="mov-vendidos-count" style="font-size:32px;font-weight:800;color:#3B6D11">0</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px">
+      <div id="mov-card-vendidos" style="background:#fff;border:1px solid #e0e0d8;border-radius:10px;padding:14px;text-align:center;cursor:pointer" onclick="filtrarMovPor('venda')" title="Clique para ver quais produtos">
+        <div style="font-size:11px;color:#888;margin-bottom:6px" id="mov-vendidos-label">Vendidos no mês</div>
+        <div id="mov-vendidos-count" style="font-size:28px;font-weight:800;color:#3B6D11">0</div>
       </div>
-      <div id="mov-card-outras" style="background:#fff;border:1px solid #e0e0d8;border-radius:10px;padding:16px;text-align:center;cursor:pointer" onclick="filtrarMovPor('outras')" title="Clique para ver quais produtos">
-        <div style="font-size:12px;color:#888;margin-bottom:6px" id="mov-outras-label">Outras saídas no mês (vencimento, avaria, brinde, ajuste)</div>
-        <div id="mov-outras-count" style="font-size:32px;font-weight:800;color:#BA7517">0</div>
+      <div id="mov-card-vencimento" style="background:#fff;border:1px solid #e0e0d8;border-radius:10px;padding:14px;text-align:center;cursor:pointer" onclick="filtrarMovPor('vencimento')" title="Clique para ver quais produtos">
+        <div style="font-size:11px;color:#888;margin-bottom:6px">🗓️ Vencimento</div>
+        <div id="mov-vencimento-count" style="font-size:28px;font-weight:800;color:#A32D2D">0</div>
+      </div>
+      <div id="mov-card-avaria" style="background:#fff;border:1px solid #e0e0d8;border-radius:10px;padding:14px;text-align:center;cursor:pointer" onclick="filtrarMovPor('avaria')" title="Clique para ver quais produtos">
+        <div style="font-size:11px;color:#888;margin-bottom:6px">💔 Avaria</div>
+        <div id="mov-avaria-count" style="font-size:28px;font-weight:800;color:#A32D2D">0</div>
+      </div>
+      <div id="mov-card-brinde" style="background:#fff;border:1px solid #e0e0d8;border-radius:10px;padding:14px;text-align:center;cursor:pointer" onclick="filtrarMovPor('brinde')" title="Clique para ver quais produtos">
+        <div style="font-size:11px;color:#888;margin-bottom:6px">🎁 Brinde/amostra</div>
+        <div id="mov-brinde-count" style="font-size:28px;font-weight:800;color:#BA7517">0</div>
+      </div>
+      <div id="mov-card-ajuste" style="background:#fff;border:1px solid #e0e0d8;border-radius:10px;padding:14px;text-align:center;cursor:pointer" onclick="filtrarMovPor('ajuste')" title="Clique para ver quais produtos">
+        <div style="font-size:11px;color:#888;margin-bottom:6px">📋 Ajuste</div>
+        <div id="mov-ajuste-count" style="font-size:28px;font-weight:800;color:#BA7517">0</div>
       </div>
     </div>
     <div id="mov-filtro-banner"></div>
@@ -537,12 +549,28 @@ function renderAlertas(){
   const box=document.getElementById('alertas');
   let html='';
   const ativos2=produtos.filter(p=>!p.arquivado);
-  const vencidos=lotes.filter(l=>l.qtd>0&&l.validade&&dpv(l.validade)<0&&ativos2.find(p=>p.id===l.prodId));
-  const urgentes=lotes.filter(l=>l.qtd>0&&l.validade&&dpv(l.validade)>=0&&dpv(l.validade)<=30&&ativos2.find(p=>p.id===l.prodId));
+  const vencidos=lotes.filter(l=>l.qtd>0&&l.validade&&dpv(l.validade)<0&&ativos2.find(p=>p.id===l.prodId)).sort((a,b)=>dpv(b.validade)-dpv(a.validade));
+  const urgentes=lotes.filter(l=>l.qtd>0&&l.validade&&dpv(l.validade)>=0&&dpv(l.validade)<=30&&ativos2.find(p=>p.id===l.prodId)).sort((a,b)=>dpv(a.validade)-dpv(b.validade));
   const zeros=ativos2.filter(p=>qtdTotal(p.id)===0);
   const semVal=lotes.filter(l=>l.qtd>0&&!l.validade&&ativos2.find(p=>p.id===l.prodId));
-  if(vencidos.length) html+=`<div class="alert-box alert-danger">🚨 <div><strong>Lotes vencidos:</strong> ${vencidos.map(l=>{const p=produtos.find(x=>x.id===l.prodId); return (p?p.nome:'?')+' ('+l.qtd+'un)';}).join(' · ')}</div></div>`;
-  if(urgentes.length) html+=`<div class="alert-box alert-warn">⏰ <div><strong>Vencem em até 30 dias:</strong> ${urgentes.map(l=>{const p=produtos.find(x=>x.id===l.prodId); return (p?p.nome:'?')+' — '+new Date(l.validade+'T12:00:00').toLocaleDateString('pt-BR')+' ('+l.qtd+'un)';}).join(' · ')}</div></div>`;
+
+  function listaValidade(items,cor,corFundo){
+    return `<div style="max-height:220px;overflow-y:auto;border:1px solid ${cor}44;border-radius:8px;margin-top:6px">
+      ${items.map(l=>{
+        const p=produtos.find(x=>x.id===l.prodId);
+        const dv=dpv(l.validade);
+        const dataStr=new Date(l.validade+'T12:00:00').toLocaleDateString('pt-BR');
+        const diasStr=dv<0?`Venceu há ${Math.abs(dv)}d`:(dv===0?'Vence hoje':`Vence em ${dv}d`);
+        return `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid ${cor}22;background:${corFundo}">
+          <div style="min-width:0"><div style="font-weight:700;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p?p.nome:'?'}</div><div style="font-size:10px;color:#888">${dataStr} · ${l.qtd} un</div></div>
+          <div style="font-size:11px;font-weight:700;color:${cor};flex-shrink:0;white-space:nowrap">${diasStr}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  if(vencidos.length) html+=`<div class="alert-box alert-danger">🚨 <div style="flex:1;min-width:0"><strong>${vencidos.length} lote(s) vencido(s)</strong>${listaValidade(vencidos,'#A32D2D','#FCEBEB')}</div></div>`;
+  if(urgentes.length) html+=`<div class="alert-box alert-warn">⏰ <div style="flex:1;min-width:0"><strong>${urgentes.length} lote(s) vencem em até 30 dias</strong>${listaValidade(urgentes,'#BA7517','#FAEEDA')}</div></div>`;
   if(zeros.length) {} // Sem estoque agora aparece no card — clique para ver
   if(semVal.length) html+=`<div class="alert-box alert-info">📅 <div><strong>${semVal.length} lote(s) sem validade</strong> — clique em 📅 para preencher</div></div>`;
   box.innerHTML=html;
@@ -763,11 +791,20 @@ window.renderHistorico=function(){
   };
   const vendasPeriodo=historico.filter(h=>h.tipo==='saida'&&h.obs&&h.obs.startsWith('Venda')&&noPeriodo(h));
   const outrasPeriodo=historico.filter(h=>h.tipo==='saida'&&(!h.obs||!h.obs.startsWith('Venda'))&&noPeriodo(h));
+  const motivoDe=h=>{
+    const obs=h.obs||'';
+    if(obs.startsWith('Descarte — vencimento')) return 'vencimento';
+    if(obs.startsWith('Descarte — avaria')) return 'avaria';
+    if(obs.startsWith('Brinde')) return 'brinde';
+    return 'ajuste';
+  };
   document.getElementById('mov-vendidos-count').textContent=new Set(vendasPeriodo.map(h=>h.produto)).size;
-  document.getElementById('mov-outras-count').textContent=new Set(outrasPeriodo.map(h=>h.produto)).size;
+  ['vencimento','avaria','brinde','ajuste'].forEach(m=>{
+    const produtosDoMotivo=new Set(outrasPeriodo.filter(h=>motivoDe(h)===m).map(h=>h.produto));
+    document.getElementById(`mov-${m}-count`).textContent=produtosDoMotivo.size;
+  });
   const periodoLabel=usandoMesPadrao?'no mês':'no período selecionado';
-  document.getElementById('mov-vendidos-label').textContent=`Produtos vendidos ${periodoLabel}`;
-  document.getElementById('mov-outras-label').textContent=`Outras saídas ${periodoLabel} (vencimento, avaria, brinde, ajuste)`;
+  document.getElementById('mov-vendidos-label').textContent=`Vendidos ${periodoLabel}`;
 
   let lista=historico.filter(h=>{
     if(tipo && h.tipo!==tipo) return false;
@@ -781,13 +818,19 @@ window.renderHistorico=function(){
       }
     }
     if(movFiltroEspecial==='venda' && !(h.tipo==='saida'&&h.obs&&h.obs.startsWith('Venda'))) return false;
-    if(movFiltroEspecial==='outras' && !(h.tipo==='saida'&&(!h.obs||!h.obs.startsWith('Venda')))) return false;
+    if(['vencimento','avaria','brinde','ajuste'].includes(movFiltroEspecial)){
+      if(!(h.tipo==='saida'&&(!h.obs||!h.obs.startsWith('Venda')))) return false;
+      if(motivoDe(h)!==movFiltroEspecial) return false;
+    }
     return true;
   });
 
   const bannerLabels={
     'venda':`💰 Mostrando saídas do tipo Venda (${lista.length})`,
-    'outras':`📦 Mostrando outras saídas — vencimento, avaria, brinde, ajuste (${lista.length})`
+    'vencimento':`🗓️ Mostrando saídas por vencimento (${lista.length})`,
+    'avaria':`💔 Mostrando saídas por avaria (${lista.length})`,
+    'brinde':`🎁 Mostrando saídas de brinde/amostra (${lista.length})`,
+    'ajuste':`📋 Mostrando ajustes de estoque (${lista.length})`
   };
   const movBanner=document.getElementById('mov-filtro-banner');
   if(movBanner){
@@ -797,9 +840,9 @@ window.renderHistorico=function(){
       movBanner.innerHTML='';
     }
   }
-  ['mov-card-vendidos','mov-card-outras'].forEach(id=>{
+  ['mov-card-vendidos','mov-card-vencimento','mov-card-avaria','mov-card-brinde','mov-card-ajuste'].forEach(id=>{
     const el=document.getElementById(id);
-    const tp=id==='mov-card-vendidos'?'venda':'outras';
+    const tp=id.replace('mov-card-','').replace('vendidos','venda');
     if(el) el.style.outline=(movFiltroEspecial===tp)?'2px solid #3B6D11':'none';
   });
 
