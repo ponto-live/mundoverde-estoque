@@ -999,14 +999,41 @@ window.renderEntradas=function(){
     const p=produtos.find(x=>x.nome===h.produto);
     return s+(p?p.custo*h.qtd:0);
   },0);
+  const outrasPorMotivo={vencimento:0,avaria:0,brinde:0,ajuste:0};
+  const regsPorMotivo={vencimento:0,avaria:0,brinde:0,ajuste:0};
+  saidasOutras.forEach(h=>{
+    const p=produtos.find(x=>x.nome===h.produto);
+    const valor=p?p.custo*h.qtd:0;
+    const obs=h.obs||'';
+    let motivo='ajuste';
+    if(obs.startsWith('Descarte — vencimento')) motivo='vencimento';
+    else if(obs.startsWith('Descarte — avaria')) motivo='avaria';
+    else if(obs.startsWith('Brinde')) motivo='brinde';
+    outrasPorMotivo[motivo]+=valor;
+    regsPorMotivo[motivo]++;
+  });
+
+  const ativosEnt=produtos.filter(p=>!p.arquivado);
+  const totalUnidadesEstoque=ativosEnt.reduce((s,p)=>s+qtdTotal(p.id),0);
 
   document.getElementById('entradas-resumo').innerHTML=`
     <div class="metric"><div class="metric-label">Total comprado</div><div class="metric-value" style="font-size:18px;color:#3B6D11">R$ ${totalGasto.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div><div class="metric-sub">no período</div></div>
     <div class="metric"><div class="metric-label">Unidades recebidas</div><div class="metric-value">${totalItens}</div><div class="metric-sub">itens</div></div>
     <div class="metric"><div class="metric-label">Registros</div><div class="metric-value">${lista.length}</div><div class="metric-sub">entradas</div></div>
+    <div class="metric"><div class="metric-label">Produtos em estoque</div><div class="metric-value">${ativosEnt.length}</div><div class="metric-sub">${totalUnidadesEstoque} un no total</div></div>
     <div class="metric"><div class="metric-label">Valor vendido</div><div class="metric-value" style="font-size:18px;color:#1a6fa8">R$ ${valorVendaReal.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div><div class="metric-sub">preço de venda · ${saidasVenda.length} registros${semPrecoVenda?` (${semPrecoVenda} sem preço cadastrado)`:''}</div></div>
     <div class="metric"><div class="metric-label">Custo do que saiu por venda</div><div class="metric-value" style="font-size:18px;color:#639922">R$ ${valorVendaCusto.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div><div class="metric-sub">custo · lucro bruto ≈ R$ ${(valorVendaReal-valorVendaCusto).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
-    <div class="metric"><div class="metric-label">Valor de outras saídas</div><div class="metric-value" style="font-size:18px;color:#BA7517">R$ ${valorOutras.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div><div class="metric-sub">≈ custo · vencimento, avaria, brinde, ajuste · ${saidasOutras.length} registros</div></div>`;
+    <div class="metric" style="grid-column:span 2">
+      <div class="metric-label">Valor de outras saídas</div>
+      <div class="metric-value" style="font-size:18px;color:#BA7517">R$ ${valorOutras.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+      <div class="metric-sub" style="margin-bottom:6px">≈ custo · ${saidasOutras.length} registros</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:6px;font-size:11px">
+        <div>🗓️ Vencimento<br><strong>R$ ${outrasPorMotivo.vencimento.toLocaleString('pt-BR',{minimumFractionDigits:2})}</strong> <span style="color:#aaa">(${regsPorMotivo.vencimento})</span></div>
+        <div>💔 Avaria<br><strong>R$ ${outrasPorMotivo.avaria.toLocaleString('pt-BR',{minimumFractionDigits:2})}</strong> <span style="color:#aaa">(${regsPorMotivo.avaria})</span></div>
+        <div>🎁 Brinde/amostra<br><strong>R$ ${outrasPorMotivo.brinde.toLocaleString('pt-BR',{minimumFractionDigits:2})}</strong> <span style="color:#aaa">(${regsPorMotivo.brinde})</span></div>
+        <div>📋 Ajuste<br><strong>R$ ${outrasPorMotivo.ajuste.toLocaleString('pt-BR',{minimumFractionDigits:2})}</strong> <span style="color:#aaa">(${regsPorMotivo.ajuste})</span></div>
+      </div>
+    </div>`;
 
   // Agrupado por categoria
   const porCat={};
