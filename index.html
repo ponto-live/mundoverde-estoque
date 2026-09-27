@@ -1127,29 +1127,9 @@ function renderListaCompraInteligente(){
 
 function renderCompras(){
   renderListaCompraInteligente();
+  // A antiga sugestão (baseada em p.min / giro(p)) foi removida: Compras usa só a Lista de Compra Inteligente.
   const list=document.getElementById('compras-list');
-  const sug=produtos.filter(p=>qtdTotal(p.id)<=p.min).map(p=>{
-    const qtd=qtdTotal(p.id);
-    const g=giro(p);
-    const sugest=Math.max(p.min*3,Math.round(g*1.5)||p.min*3);
-    const motivo=qtd===0?'🚨 Zerado — compra urgente':`⚠️ Abaixo do mínimo (mín:${p.min} · atual:${qtd})`;
-    return{p,qtd,g,sugest,motivo};
-  }).sort((a,b)=>a.qtd-b.qtd);
-  if(!sug.length){list.innerHTML='<div class="empty-state">✅ Estoque em dia!</div>';return;}
-  list.innerHTML=sug.map(s=>`
-    <div class="card" style="margin-bottom:10px;display:flex;align-items:center;gap:12px">
-      <div style="width:40px;height:40px;border-radius:9px;background:var(--verde-claro);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🌿</div>
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:700">${s.p.nome}</div>
-        <div style="font-size:11px;color:#888;margin-top:2px">${s.motivo}</div>
-        <div style="font-size:10px;color:#aaa;margin-top:2px">Custo unit.: R$ ${Number(s.p.custo).toFixed(2)} · Giro: ${s.g} un/mês</div>
-      </div>
-      <div style="text-align:right;flex-shrink:0">
-        <div style="font-size:16px;font-weight:700;color:#3B6D11">${s.sugest} un</div>
-        <div style="font-size:10px;color:#aaa">sugerido</div>
-        <div style="font-size:12px;font-weight:600;margin-top:2px">≈ R$ ${(s.sugest*s.p.custo).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
-      </div>
-    </div>`).join('');
+  if(list) list.innerHTML='';
 }
 
 let rankingQtd=10;
