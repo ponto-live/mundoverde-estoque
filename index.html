@@ -53,10 +53,10 @@ body{font-family:Arial,sans-serif;background:#f5f5f0;color:#1a1a1a;min-height:10
 .sidebar-head .logo-txt{font-weight:800;color:#27500A;font-size:15px}
 .sidebar-head .logo-sub{font-size:10px;color:#999}
 .sidebar-nav{flex:1;overflow-y:auto;padding:14px 10px}
-.side-btn{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border:none;background:transparent;border-radius:8px;font-size:13px;color:#444;font-family:Arial,sans-serif;cursor:pointer;text-align:left;white-space:nowrap;overflow:hidden;margin-bottom:4px}
+.side-btn{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border:none;border-left:3px solid transparent;background:transparent;border-radius:8px;font-size:13px;color:#444;font-family:Arial,sans-serif;cursor:pointer;text-align:left;white-space:nowrap;overflow:hidden;margin-bottom:4px;transition:background .15s ease,color .15s ease}
 .side-btn .ic{font-size:17px;width:20px;text-align:center;flex-shrink:0}
 .side-btn:hover{background:var(--verde-claro)}
-.side-btn.active{background:var(--verde-claro);color:var(--verde-escuro);font-weight:700}
+.side-btn.active{background:var(--verde-claro);color:var(--verde-escuro);font-weight:700;border-left-color:var(--verde)}
 .sidebar.collapsed .side-btn .lbl,.sidebar.collapsed .sidebar-head .logo-txt,.sidebar.collapsed .sidebar-head .logo-sub{display:none}
 .sidebar.collapsed .side-btn{justify-content:center}
 .sidebar-foot{padding:8px;border-top:1px solid #eee}
@@ -67,22 +67,24 @@ body{font-family:Arial,sans-serif;background:#f5f5f0;color:#1a1a1a;min-height:10
 @media(min-width:769px){.topbar-logo{visibility:hidden}}
 .dash-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;align-items:start}
 @media(max-width:900px){.dash-grid{grid-template-columns:1fr}}
-.dash-card{background:#fff;border:1px solid #e0e0d8;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);margin-bottom:16px}
-.dash-card h3{font-size:13px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.pair-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:640px){.pair-grid{grid-template-columns:1fr}}
+.card,.dash-card{background:#fff;border:1px solid #e0e0d8;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);margin-bottom:16px}
+.card h3,.dash-card h3{font-size:13px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:6px}
 .attn-item{display:flex;align-items:center;gap:10px;padding:10px 8px;border-radius:8px;margin-bottom:4px}
 .attn-item:hover{background:#f8f8f4}
 .attn-dot{font-size:16px;flex-shrink:0}
 .attn-text{flex:1;font-size:12.5px;color:#333;min-width:0}
 .attn-count{font-weight:800;font-size:15px}
-.attn-go{border:1px solid #ddd;background:#fff;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;color:#555;flex-shrink:0;white-space:nowrap}
-.attn-go:hover{background:#f0f0ea}
+.attn-go,.btn-sm{border:1px solid #ddd;background:#fff;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer;color:#555;font-weight:600;white-space:nowrap;flex-shrink:0;font-family:Arial,sans-serif}
+.attn-go:hover,.btn-sm:hover{background:#f0f0ea}
 .medal-row{display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid #f0f0ea}
 .medal-row:last-child{border-bottom:none}
 .chart-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:11px}
 .chart-bar-track{flex:1;height:14px;background:#eee;border-radius:4px;overflow:hidden}
 .chart-bar-fill{height:100%;border-radius:4px}
-.period-pill{padding:4px 11px;border:1px solid #ddd;border-radius:20px;font-size:11px;cursor:pointer;background:#fff;color:#555;font-family:Arial,sans-serif}
-.period-pill.active{background:#3B6D11;color:#fff;border-color:#3B6D11}
+.period-pill,.cat-chip{padding:4px 11px;border:1px solid #ddd;border-radius:20px;font-size:11px;cursor:pointer;background:#fff;color:#555;font-family:Arial,sans-serif}
+.period-pill.active,.cat-chip.active{background:#3B6D11;color:#fff;border-color:#3B6D11}
 .sync{font-size:11px;color:rgba(255,255,255,0.75);display:flex;align-items:center;gap:5px}
 .sync-dot{width:7px;height:7px;border-radius:50%;background:#7fff7f}
 .sync-dot.off{background:#ff9999}
@@ -96,8 +98,17 @@ body{font-family:Arial,sans-serif;background:#f5f5f0;color:#1a1a1a;min-height:10
 .metric-sub{font-size:10px;color:#aaa;margin-top:2px}
 .sec-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .sec-title{font-size:14px;font-weight:700}
-.btn-green{padding:7px 16px;background:#3B6D11;color:#fff;border:none;border-radius:7px;font-size:12px;cursor:pointer;font-family:Arial,sans-serif;font-weight:600}
+.btn-green{padding:7px 16px;background:#3B6D11;color:#fff;border:none;border-radius:7px;font-size:12px;cursor:pointer;font-family:Arial,sans-serif;font-weight:600;white-space:nowrap}
 .btn-green:hover{background:#27500A}
+.btn-outline{padding:7px 14px;border:1px solid var(--borda);border-radius:7px;font-size:12px;cursor:pointer;background:#fff;color:#555;font-family:Arial,sans-serif;white-space:nowrap}
+.btn-outline:hover{background:#f5f5f0}
+.filter-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.hint-box{background:var(--verde-claro);border-radius:7px;padding:9px;font-size:11px;color:var(--verde-escuro)}
+.hint-box-warn{background:var(--laranja-claro);border-radius:7px;padding:9px;font-size:11px;color:#633806}
+.hint-box-error{background:var(--vermelho-claro);border-radius:7px;padding:10px;font-size:11px;color:#791F1F}
+.filter-banner{background:var(--laranja-claro);border:1px solid #FAC775;border-radius:8px;padding:9px 14px;font-size:12px;color:#633806;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.filter-banner button{border:none;background:none;color:#633806;cursor:pointer;font-size:12px;font-weight:700}
+.check-item{border:1px solid #FAC775;background:var(--laranja-claro);border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
 .toolbtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:104px;min-height:56px;padding:8px 6px;border-radius:9px;border:1px solid #ddd;background:#fff;color:#555;font-family:Arial,sans-serif;font-size:11px;font-weight:600;cursor:pointer;text-align:center;line-height:1.25}
 .toolbtn:hover{background:#f5f5f0}
 .toolbtn .ic{font-size:17px;line-height:1}
@@ -161,8 +172,6 @@ tr.prod-row:hover td{background:#f5faf0}
 .search-bar{width:100%;padding:8px 13px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:Arial,sans-serif;margin-bottom:12px;background:#fff}
 .search-bar:focus{outline:none;border-color:#3B6D11}
 .cat-filter{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
-.cat-chip{padding:4px 11px;border:1px solid #ddd;border-radius:20px;font-size:11px;cursor:pointer;background:#fff;color:#555;font-family:Arial,sans-serif}
-.cat-chip.active{background:#3B6D11;color:#fff;border-color:#3B6D11}
 .lote-info{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .expand-icon{font-size:11px;color:#aaa;margin-left:4px;transition:transform 0.2s}
 @media(max-width:640px){.fr{grid-template-columns:1fr}}
@@ -264,17 +273,17 @@ tr.prod-row:hover td{background:#f5faf0}
       </div>
     </div>
     <input type="text" class="search-bar" id="search-input" placeholder="🔍 Buscar produto..." style="margin-bottom:8px">
-    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+    <div class="filter-row">
       <input type="date" id="est-data-ini" style="font-size:12px;padding:6px 10px;border:1px solid #ddd;border-radius:7px;font-family:Arial,sans-serif">
       <span style="font-size:12px;color:#888">até</span>
       <input type="date" id="est-data-fim" style="font-size:12px;padding:6px 10px;border:1px solid #ddd;border-radius:7px;font-family:Arial,sans-serif">
-      <button onclick="renderTabela()" style="padding:7px 16px;background:#3B6D11;color:#fff;border:none;border-radius:7px;font-size:12px;cursor:pointer;font-family:Arial,sans-serif;font-weight:600;white-space:nowrap">🔍 Pesquisar</button>
-      <button onclick="limparFiltrosEstoque()" style="padding:7px 12px;border:1px solid #ddd;border-radius:7px;font-size:12px;cursor:pointer;background:#fff;font-family:Arial,sans-serif;white-space:nowrap">✕ Limpar</button>
+      <button onclick="renderTabela()" class="btn-green">🔍 Pesquisar</button>
+      <button onclick="limparFiltrosEstoque()" class="btn-outline">✕ Limpar</button>
     </div>
     <div id="filtro-ativo-banner"></div>
     <div class="cat-filter" id="cat-filter"></div>
-    <div class="table-wrap">
-      <table>
+    <div class="table-wrap" style="overflow-x:auto">
+      <table style="min-width:760px">
         <thead>
           <tr>
             <th style="width:25%">Produto</th>
@@ -287,7 +296,7 @@ tr.prod-row:hover td{background:#f5faf0}
             <th style="width:12%">Ações</th>
           </tr>
         </thead>
-        <tbody id="produtos-tbody"><tr><td colspan="8" style="text-align:center;padding:2rem;color:#aaa">🔄 Carregando...</td></tr></tbody>
+        <tbody id="produtos-tbody"><tr><td colspan="8"><div class="empty-state">🔄 Carregando...</div></td></tr></tbody>
       </table>
     </div>
   </div>
@@ -295,29 +304,29 @@ tr.prod-row:hover td{background:#f5faf0}
   <div id="tab-movimentos" class="tab-content">
     <div class="sec-header"><span class="sec-title">📋 Histórico de movimentações</span></div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px">
-      <div id="mov-card-vendidos" style="background:#fff;border:1px solid #e0e0d8;border-radius:10px;padding:14px;text-align:center;cursor:pointer" onclick="filtrarMovPor('venda')" title="Clique para ver quais produtos">
+      <div id="mov-card-vendidos" class="metric" style="cursor:pointer;text-align:center" onclick="filtrarMovPor('venda')" title="Clique para ver quais produtos">
         <div style="font-size:11px;color:#888;margin-bottom:6px" id="mov-vendidos-label">Vendidos no mês</div>
         <div id="mov-vendidos-count" style="font-size:28px;font-weight:800;color:#3B6D11">0</div>
       </div>
-      <div id="mov-card-vencimento" style="background:#fff;border:1px solid #e0e0d8;border-radius:10px;padding:14px;text-align:center;cursor:pointer" onclick="filtrarMovPor('vencimento')" title="Clique para ver quais produtos">
+      <div id="mov-card-vencimento" class="metric" style="cursor:pointer;text-align:center" onclick="filtrarMovPor('vencimento')" title="Clique para ver quais produtos">
         <div style="font-size:11px;color:#888;margin-bottom:6px">🗓️ Vencimento</div>
         <div id="mov-vencimento-count" style="font-size:28px;font-weight:800;color:#A32D2D">0</div>
       </div>
-      <div id="mov-card-avaria" style="background:#fff;border:1px solid #e0e0d8;border-radius:10px;padding:14px;text-align:center;cursor:pointer" onclick="filtrarMovPor('avaria')" title="Clique para ver quais produtos">
+      <div id="mov-card-avaria" class="metric" style="cursor:pointer;text-align:center" onclick="filtrarMovPor('avaria')" title="Clique para ver quais produtos">
         <div style="font-size:11px;color:#888;margin-bottom:6px">💔 Avaria</div>
         <div id="mov-avaria-count" style="font-size:28px;font-weight:800;color:#A32D2D">0</div>
       </div>
-      <div id="mov-card-brinde" style="background:#fff;border:1px solid #e0e0d8;border-radius:10px;padding:14px;text-align:center;cursor:pointer" onclick="filtrarMovPor('brinde')" title="Clique para ver quais produtos">
+      <div id="mov-card-brinde" class="metric" style="cursor:pointer;text-align:center" onclick="filtrarMovPor('brinde')" title="Clique para ver quais produtos">
         <div style="font-size:11px;color:#888;margin-bottom:6px">🎁 Brinde/amostra</div>
         <div id="mov-brinde-count" style="font-size:28px;font-weight:800;color:#BA7517">0</div>
       </div>
-      <div id="mov-card-ajuste" style="background:#fff;border:1px solid #e0e0d8;border-radius:10px;padding:14px;text-align:center;cursor:pointer" onclick="filtrarMovPor('ajuste')" title="Clique para ver quais produtos">
+      <div id="mov-card-ajuste" class="metric" style="cursor:pointer;text-align:center" onclick="filtrarMovPor('ajuste')" title="Clique para ver quais produtos">
         <div style="font-size:11px;color:#888;margin-bottom:6px">📋 Ajuste</div>
         <div id="mov-ajuste-count" style="font-size:28px;font-weight:800;color:#BA7517">0</div>
       </div>
     </div>
     <div id="mov-filtro-banner"></div>
-    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+    <div class="filter-row">
       <select id="mov-tipo" style="font-size:12px;padding:6px 10px;border:1px solid #ddd;border-radius:7px;font-family:Arial,sans-serif">
         <option value="">Todos os tipos</option>
         <option value="entrada">📥 Entradas</option>
@@ -327,12 +336,12 @@ tr.prod-row:hover td{background:#f5faf0}
       <span style="font-size:12px;color:#888">até</span>
       <input type="date" id="mov-data-fim" style="font-size:12px;padding:6px 10px;border:1px solid #ddd;border-radius:7px;font-family:Arial,sans-serif">
     </div>
-    <div style="display:flex;gap:8px;margin-bottom:12px">
+    <div class="filter-row">
       <input type="text" class="search-bar" id="mov-busca" placeholder="🔍 Buscar produto..." style="margin-bottom:0;flex:1">
-      <button onclick="renderHistorico()" style="padding:8px 18px;background:#3B6D11;color:#fff;border:none;border-radius:7px;font-size:13px;cursor:pointer;font-family:Arial,sans-serif;font-weight:600;white-space:nowrap">🔍 Pesquisar</button>
-      <button onclick="limparFiltrosMov()" style="padding:8px 14px;border:1px solid #ddd;border-radius:7px;font-size:12px;cursor:pointer;background:#fff;font-family:Arial,sans-serif;white-space:nowrap">✕ Limpar</button>
+      <button onclick="renderHistorico()" class="btn-green">🔍 Pesquisar</button>
+      <button onclick="limparFiltrosMov()" class="btn-outline">✕ Limpar</button>
     </div>
-    <div class="table-wrap" style="padding:0 14px"><div id="historico-list"><div style="text-align:center;padding:2rem;color:#aaa">🔄 Carregando...</div></div></div>
+    <div class="table-wrap" style="padding:0 14px"><div id="historico-list"><div class="empty-state">🔄 Carregando...</div></div></div>
   </div>
 
   <div id="tab-compras" class="tab-content">
@@ -362,16 +371,16 @@ tr.prod-row:hover td{background:#f5faf0}
   <!-- ENTRADAS POR PERÍODO -->
   <div id="tab-entradas" class="tab-content">
     <div class="sec-header"><span class="sec-title">📊 Entradas por período</span></div>
-    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+    <div class="filter-row">
       <div id="entradas-filtros" style="display:flex;gap:5px;flex-wrap:wrap"></div>
       <input type="date" id="ent-data-ini" style="font-size:12px;padding:6px 10px;border:1px solid #ddd;border-radius:7px;font-family:Arial,sans-serif">
       <span style="font-size:12px;color:#888">até</span>
       <input type="date" id="ent-data-fim" style="font-size:12px;padding:6px 10px;border:1px solid #ddd;border-radius:7px;font-family:Arial,sans-serif">
     </div>
-    <div style="display:flex;gap:8px;margin-bottom:12px">
+    <div class="filter-row">
       <input type="text" class="search-bar" id="ent-busca" placeholder="🔍 Buscar produto..." style="margin-bottom:0;flex:1">
-      <button onclick="renderEntradas()" style="padding:8px 18px;background:#3B6D11;color:#fff;border:none;border-radius:7px;font-size:13px;cursor:pointer;font-family:Arial,sans-serif;font-weight:600;white-space:nowrap">🔍 Pesquisar</button>
-      <button onclick="limparFiltrosEnt()" style="padding:8px 14px;border:1px solid #ddd;border-radius:7px;font-size:12px;cursor:pointer;background:#fff;font-family:Arial,sans-serif;white-space:nowrap">✕ Limpar</button>
+      <button onclick="renderEntradas()" class="btn-green">🔍 Pesquisar</button>
+      <button onclick="limparFiltrosEnt()" class="btn-outline">✕ Limpar</button>
     </div>
     <div id="entradas-resumo" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px"></div>
     <div id="entradas-categorias" style="margin-bottom:20px"></div>
@@ -387,8 +396,8 @@ tr.prod-row:hover td{background:#f5faf0}
       <input type="date" id="giro-data-ini" onchange="renderGiro()" style="font-size:12px;padding:6px 10px;border:1px solid #ddd;border-radius:7px;font-family:Arial,sans-serif">
       <span style="font-size:12px;color:#888">até</span>
       <input type="date" id="giro-data-fim" onchange="renderGiro()" style="font-size:12px;padding:6px 10px;border:1px solid #ddd;border-radius:7px;font-family:Arial,sans-serif">
-      <button onclick="renderGiro()" style="padding:6px 16px;background:#3B6D11;color:#fff;border:none;border-radius:7px;font-size:12px;cursor:pointer;font-family:Arial,sans-serif;font-weight:600;white-space:nowrap">🔍 Pesquisar</button>
-      <button onclick="limparFiltrosGiro()" style="padding:6px 12px;border:1px solid #ddd;border-radius:7px;font-size:12px;cursor:pointer;background:#fff;font-family:Arial,sans-serif;white-space:nowrap">✕ Limpar</button>
+      <button onclick="renderGiro()" class="btn-green">🔍 Pesquisar</button>
+      <button onclick="limparFiltrosGiro()" class="btn-outline">✕ Limpar</button>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
       <div id="giro-card-estagnados" style="background:#fff;border:1px solid #e0e0d8;border-radius:10px;padding:16px;text-align:center;cursor:pointer" onclick="filtrarGiroPor('estagnados')" title="Clique para ver a lista">
@@ -412,10 +421,10 @@ tr.prod-row:hover td{background:#f5faf0}
     </div>
     <div class="sec-header"><span class="sec-title">Todos os produtos</span></div>
     <div id="giro-filtro-banner"></div>
-    <div style="display:flex;gap:8px;margin-bottom:12px">
+    <div class="filter-row">
       <input type="text" class="search-bar" id="giro-busca" placeholder="🔍 Buscar produto..." style="margin-bottom:0;flex:1">
-      <button onclick="giroPage=1;renderGiro()" style="padding:8px 18px;background:#3B6D11;color:#fff;border:none;border-radius:7px;font-size:13px;cursor:pointer;font-family:Arial,sans-serif;font-weight:600;white-space:nowrap">🔍 Pesquisar</button>
-      <button onclick="limparFiltrosGiro()" style="padding:8px 14px;border:1px solid #ddd;border-radius:7px;font-size:12px;cursor:pointer;background:#fff;font-family:Arial,sans-serif;white-space:nowrap">✕ Limpar</button>
+      <button onclick="giroPage=1;renderGiro()" class="btn-green">🔍 Pesquisar</button>
+      <button onclick="limparFiltrosGiro()" class="btn-outline">✕ Limpar</button>
     </div>
     <div class="table-wrap" style="overflow-x:auto">
       <table style="min-width:500px">
@@ -735,11 +744,11 @@ window.renderTabela=function(){
       'vencendo':`🔴 Mostrando ${lista.length} produto(s) com lotes vencendo em 60 dias`
     };
     const label=labels[filtroEspecial]||'';
-    if(bannerEl) bannerEl.innerHTML=`<div style="background:#FAEEDA;border:1px solid #FAC775;border-radius:8px;padding:9px 14px;font-size:12px;color:#633806;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">${label} <button onclick="filtrarPor('')" style="border:none;background:none;color:#633806;cursor:pointer;font-size:12px;font-weight:700">✕ Ver todos</button></div>`;
+    if(bannerEl) bannerEl.innerHTML=`<div class="filter-banner">${label} <button onclick="filtrarPor('')">✕ Ver todos</button></div>`;
   } else {
     if(bannerEl) bannerEl.innerHTML='';
   }
-  if(!lista.length){tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:2rem;color:#aaa">Nenhum produto encontrado.</td></tr>`;return;}
+  if(!lista.length){tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state">Nenhum produto encontrado.</div></td></tr>`;return;}
 
   let html='';
   lista.forEach(p=>{
@@ -953,7 +962,7 @@ window.renderHistorico=function(){
   const movBanner=document.getElementById('mov-filtro-banner');
   if(movBanner){
     if(movFiltroEspecial){
-      movBanner.innerHTML=`<div style="background:#FAEEDA;border:1px solid #FAC775;border-radius:8px;padding:9px 14px;font-size:12px;color:#633806;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">${bannerLabels[movFiltroEspecial]} <button onclick="filtrarMovPor('${movFiltroEspecial}')" style="border:none;background:none;color:#633806;cursor:pointer;font-size:12px;font-weight:700">✕ Ver todos</button></div>`;
+      movBanner.innerHTML=`<div class="filter-banner">${bannerLabels[movFiltroEspecial]} <button onclick="filtrarMovPor('${movFiltroEspecial}')">✕ Ver todos</button></div>`;
     } else {
       movBanner.innerHTML='';
     }
@@ -991,8 +1000,8 @@ function renderCompras(){
   }).sort((a,b)=>a.qtd-b.qtd);
   if(!sug.length){list.innerHTML='<div class="empty-state">✅ Estoque em dia!</div>';return;}
   list.innerHTML=sug.map(s=>`
-    <div style="background:#fff;border:1px solid #e0e0d8;border-radius:10px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px">
-      <div style="width:40px;height:40px;border-radius:9px;background:#EAF3DE;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🌿</div>
+    <div class="card" style="margin-bottom:10px;display:flex;align-items:center;gap:12px">
+      <div style="width:40px;height:40px;border-radius:9px;background:var(--verde-claro);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🌿</div>
       <div style="flex:1">
         <div style="font-size:13px;font-weight:700">${s.p.nome}</div>
         <div style="font-size:11px;color:#888;margin-top:2px">${s.motivo}</div>
@@ -1399,7 +1408,7 @@ window.renderGiro=function(){
   const giroBanner=document.getElementById('giro-filtro-banner');
   if(giroBanner){
     if(giroFiltroEspecial){
-      giroBanner.innerHTML=`<div style="background:#FAEEDA;border:1px solid #FAC775;border-radius:8px;padding:9px 14px;font-size:12px;color:#633806;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">${bannerLabels[giroFiltroEspecial]} (${lista.length}) <button onclick="filtrarGiroPor('${giroFiltroEspecial}')" style="border:none;background:none;color:#633806;cursor:pointer;font-size:12px;font-weight:700">✕ Ver todos</button></div>`;
+      giroBanner.innerHTML=`<div class="filter-banner">${bannerLabels[giroFiltroEspecial]} (${lista.length}) <button onclick="filtrarGiroPor('${giroFiltroEspecial}')">✕ Ver todos</button></div>`;
     } else {
       giroBanner.innerHTML='';
     }
@@ -1501,7 +1510,7 @@ function renderTarefas(){
     pDiv.innerHTML='<div class="empty-state">✅ Nenhuma tarefa pendente! Tudo em dia.</div>';
   } else {
     pDiv.innerHTML=pendentes.map(t=>`
-      <div style="background:#fff;border:1px solid #e0e0d8;border-radius:10px;padding:14px;margin-bottom:10px;display:flex;align-items:flex-start;gap:12px">
+      <div class="card" style="margin-bottom:10px;display:flex;align-items:flex-start;gap:12px">
         <button onclick="concluirTarefa('${t.id}')" style="width:22px;height:22px;border-radius:50%;border:2px solid #3B6D11;background:#fff;cursor:pointer;flex-shrink:0;margin-top:1px"></button>
         <div style="flex:1">
           <div style="font-size:14px;font-weight:700">${t.titulo}</div>
@@ -1517,7 +1526,7 @@ function renderTarefas(){
 
   const cDiv=document.getElementById('tarefas-concluidas');
   if(!concluidas.length){
-    cDiv.innerHTML='<div style="font-size:12px;color:#aaa;padding:8px 0">Nenhuma tarefa concluída ainda.</div>';
+    cDiv.innerHTML='<div class="empty-state">Nenhuma tarefa concluída ainda.</div>';
   } else {
     cDiv.innerHTML=concluidas.slice(0,5).map(t=>`
       <div style="background:#f5fdf0;border:1px solid #c0dd97;border-radius:10px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:12px;opacity:0.8">
@@ -1646,7 +1655,6 @@ function fmtBRL(v){ return 'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFra
 
 window.renderDashboard=function(){
   const ativos=produtos.filter(p=>!p.arquivado);
-  const valorEstoque=ativos.reduce((s,p)=>s+(p.custo||0)*qtdTotal(p.id),0);
   const estoqueCritico=ativos.filter(p=>{const q=qtdTotal(p.id);return q>0&&q<=(p.min||3);})
     .sort((a,b)=>(qtdTotal(a.id)/(a.min||3))-(qtdTotal(b.id)/(b.min||3)));
   const semEstoque=ativos.filter(p=>qtdTotal(p.id)===0);
@@ -1656,6 +1664,17 @@ window.renderDashboard=function(){
   const lotesUrgentes=lotesAtivos.filter(l=>l.validade&&dpv(l.validade)<=60).sort((a,b)=>dpv(a.validade)-dpv(b.validade));
   const ultimasVendas=calcularUltimasVendas();
   const hojeDt=new Date();
+  const inicioMes=new Date(hojeDt.getFullYear(),hojeDt.getMonth(),1);
+  const valorVendidoMes=historico.filter(h=>{
+    if(h.tipo!=='saida'||!h.obs||!h.obs.startsWith('Venda')) return false;
+    const p=h.data.split('/'); if(p.length!==3) return false;
+    const d=new Date(`${p[2]}-${p[1]}-${p[0]}`);
+    return d>=inicioMes;
+  }).reduce((s,h)=>{
+    if(typeof h.valorTotal==='number') return s+h.valorTotal;
+    if(typeof h.valorUnitario==='number') return s+h.valorUnitario*h.qtd;
+    return s;
+  },0);
   const semGiro30=ativos.filter(p=>{
     if(qtdTotal(p.id)<=0) return false;
     const uv=ultimasVendas[p.nome];
@@ -1681,18 +1700,12 @@ window.renderDashboard=function(){
   });
   const maxDia=Math.max(1,...vendasPorDia.map(v=>v.total));
 
-  // Entradas x Saídas (últimos 7 dias, por dia)
-  const esPorDia=diasArr.map(d=>{
-    const dstr=d.toLocaleDateString('pt-BR');
-    const ent=historico.filter(h=>h.tipo==='entrada'&&h.data===dstr).reduce((s,h)=>s+h.qtd,0);
-    const sai=historico.filter(h=>h.tipo==='saida'&&h.data===dstr).reduce((s,h)=>s+h.qtd,0);
-    return {label:d.toLocaleDateString('pt-BR',{weekday:'short'}).replace('.',''),ent,sai};
-  });
-  const maxES=Math.max(1,...esPorDia.map(v=>Math.max(v.ent,v.sai)));
+  // Entradas x Saídas (30 dias) — total compacto
   const corte30=new Date(); corte30.setDate(corte30.getDate()-30);
   const dentro30=h=>{const p=h.data.split('/'); if(p.length!==3) return false; return new Date(`${p[2]}-${p[1]}-${p[0]}`)>=corte30;};
   const totalEntradas30=historico.filter(h=>h.tipo==='entrada'&&dentro30(h)).reduce((s,h)=>s+h.qtd,0);
   const totalSaidas30=historico.filter(h=>h.tipo==='saida'&&dentro30(h)).reduce((s,h)=>s+h.qtd,0);
+  const maxES30=Math.max(1,totalEntradas30,totalSaidas30);
 
   // Estoque por categoria (valor em custo)
   const porCat={};
@@ -1709,7 +1722,7 @@ window.renderDashboard=function(){
       <div class="metric" style="cursor:pointer;border:1px solid #FAC775" onclick="dashIrEstoque('baixo')"><div class="metric-label">⚠️ Estoque crítico</div><div class="metric-value" style="color:var(--laranja)">${estoqueCritico.length}</div><div class="metric-sub">clique para ver</div></div>
       <div class="metric" style="cursor:pointer;border:1px solid #F7C1C1" onclick="dashIrEstoque('vencendo')"><div class="metric-label">⏰ Vencendo em 60d</div><div class="metric-value" style="color:var(--vermelho)">${lotesVencendo60.length}</div><div class="metric-sub">clique para ver</div></div>
       <div class="metric" style="cursor:pointer" onclick="dashIrGiro('estagnados')"><div class="metric-label">🐢 Sem giro</div><div class="metric-value" style="color:var(--laranja)">${semGiro30.length}</div><div class="metric-sub">sem venda há 30+ dias</div></div>
-      <div class="metric"><div class="metric-label">💰 Valor do estoque</div><div class="metric-value" style="font-size:18px;color:var(--verde)">${fmtBRL(valorEstoque)}</div><div class="metric-sub">custo total</div></div>
+      <div class="metric"><div class="metric-label">💰 Vendido no mês</div><div class="metric-value" style="font-size:18px;color:var(--verde)">${fmtBRL(valorVendidoMes)}</div><div class="metric-sub">valor real das vendas</div></div>
     </div>
 
     <div class="dash-grid">
@@ -1740,17 +1753,21 @@ window.renderDashboard=function(){
           ${vendasPorDia.map(v=>`<div class="chart-bar-row"><div style="width:32px;color:#888;text-transform:capitalize">${v.label}</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:${Math.round(v.total/maxDia*100)}%;background:var(--verde)"></div></div><div style="width:28px;text-align:right;font-weight:700">${v.total}</div></div>`).join('')}
         </div>
 
-        <div class="dash-card">
-          <h3>🔄 Entradas x Saídas</h3>
-          <div class="metric-sub" style="margin-bottom:10px">Últimos 30 dias: <strong style="color:var(--verde)">${totalEntradas30} entradas</strong> · <strong style="color:var(--vermelho)">${totalSaidas30} saídas</strong></div>
-          ${esPorDia.map(v=>`<div class="chart-bar-row">
-            <div style="width:32px;color:#888;text-transform:capitalize">${v.label}</div>
-            <div style="flex:1;display:flex;flex-direction:column;gap:2px">
-              <div class="chart-bar-track" style="height:8px"><div class="chart-bar-fill" style="width:${Math.round(v.ent/maxES*100)}%;background:var(--verde)"></div></div>
-              <div class="chart-bar-track" style="height:8px"><div class="chart-bar-fill" style="width:${Math.round(v.sai/maxES*100)}%;background:var(--vermelho)"></div></div>
-            </div>
-            <div style="width:60px;text-align:right;font-size:10px;color:#888">+${v.ent} / −${v.sai}</div>
-          </div>`).join('')}
+        <div class="pair-grid">
+          <div class="card" style="margin-bottom:0">
+            <h3>🔄 Entradas x Saídas</h3>
+            <div class="metric-sub" style="margin-bottom:10px">Últimos 30 dias</div>
+            <div class="chart-bar-row"><div style="width:55px;color:#888">Entradas</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:${Math.round(totalEntradas30/maxES30*100)}%;background:var(--verde)"></div></div><div style="width:36px;text-align:right;font-weight:700">${totalEntradas30}</div></div>
+            <div class="chart-bar-row"><div style="width:55px;color:#888">Saídas</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:${Math.round(totalSaidas30/maxES30*100)}%;background:var(--vermelho)"></div></div><div style="width:36px;text-align:right;font-weight:700">${totalSaidas30}</div></div>
+          </div>
+          <div class="card" style="margin-bottom:0">
+            <h3>✅ Tarefas</h3>
+            ${pendentes.length?pendentes.slice(0,4).map(t=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f0f0ea">
+              <input type="checkbox" onclick="concluirTarefa('${t.id}')" style="width:15px;height:15px;flex-shrink:0;cursor:pointer">
+              <div style="font-size:11.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.titulo}</div>
+            </div>`).join(''):'<div class="empty-state" style="padding:0.75rem">Nenhuma tarefa pendente 🎉</div>'}
+            <button class="attn-go" style="margin-top:10px" onclick="dashIrTab('tarefas')">Ver todas</button>
+          </div>
         </div>
       </div>
 
@@ -1794,15 +1811,6 @@ window.renderDashboard=function(){
             <div class="chart-bar-track"><div class="chart-bar-fill" style="width:${Math.round(val/maxCat*100)}%;background:${coresCat[i%coresCat.length]}"></div></div>
           </div>`).join(''):'<div class="empty-state" style="padding:1.5rem">Sem dados</div>'}
         </div>
-
-        <div class="dash-card">
-          <h3>✅ Tarefas</h3>
-          ${pendentes.length?pendentes.slice(0,5).map(t=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f0f0ea">
-            <input type="checkbox" onclick="concluirTarefa('${t.id}')" style="width:16px;height:16px;flex-shrink:0;cursor:pointer">
-            <div style="font-size:12px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.titulo}</div>
-          </div>`).join(''):'<div class="empty-state" style="padding:1.5rem">Nenhuma tarefa pendente 🎉</div>'}
-          <button class="attn-go" style="margin-top:10px" onclick="dashIrTab('tarefas')">Ver todas</button>
-        </div>
       </div>
     </div>`;
   document.getElementById('dash-content').innerHTML=html;
@@ -1824,7 +1832,7 @@ window.openImportInventarioModal=function(){
   const hoje2=hoje();
   openModal('🧮 Importar contagem de inventário',`
     <p style="font-size:12px;color:#666;margin-bottom:8px">Cole abaixo a lista da contagem completa (JSON gerado pelo Claude a partir da sua planilha). O sistema ajusta automaticamente o estoque de cada produto pra bater com a quantidade contada.</p>
-    <div style="background:#FAEEDA;border-radius:7px;padding:9px;font-size:11px;color:#633806;margin-bottom:10px">
+    <div class="hint-box-warn" style="margin-bottom:10px">
       💡 Produtos já cadastrados: o estoque é ajustado (pra mais ou pra menos) via "Ajuste de inventário" — não conta como venda.<br>
       💡 Produtos que não existem no cadastro ainda: são criados automaticamente com a quantidade contada.
     </div>
@@ -1840,12 +1848,12 @@ function previewImportInventario(){
     const lista = JSON.parse(document.getElementById('f-impinv').value);
     const items = Array.isArray(lista) ? lista : Object.values(lista);
     const totalUn = items.reduce((s,i)=>s+(i.qtd||0),0);
-    preview.innerHTML = `<div style="background:#EAF3DE;border-radius:7px;padding:10px;font-size:11px;color:#27500A">
+    preview.innerHTML = `<div class="hint-box">
       ✅ <strong>${items.length} produto(s)</strong> na contagem, totalizando <strong>${totalUn} unidades</strong>. Pronto pra processar.
     </div>`;
   } catch(e) {
     if(document.getElementById('f-impinv').value.length > 5)
-      preview.innerHTML = `<div style="background:#FCEBEB;border-radius:7px;padding:10px;font-size:11px;color:#791F1F">❌ JSON inválido — verifique o formato</div>`;
+      preview.innerHTML = `<div class="hint-box-error">❌ JSON inválido — verifique o formato</div>`;
   }
 }
 
@@ -1864,13 +1872,13 @@ function previewImport(){
   try {
     const lista = JSON.parse(document.getElementById('f-import').value);
     const items = Array.isArray(lista) ? lista : Object.values(lista);
-    preview.innerHTML = `<div style="background:#EAF3DE;border-radius:7px;padding:10px;font-size:11px;color:#27500A">
+    preview.innerHTML = `<div class="hint-box">
       ✅ <strong>${items.length} produto(s)</strong> prontos para importar:<br>
       ${items.map(p=>`• ${p.nome} (${p.qtd||0}un · R$${Number(p.custo).toFixed(2)})`).join('<br>')}
     </div>`;
   } catch(e) {
     if(document.getElementById('f-import').value.length > 5)
-      preview.innerHTML = `<div style="background:#FCEBEB;border-radius:7px;padding:10px;font-size:11px;color:#791F1F">❌ JSON inválido — verifique o formato</div>`;
+      preview.innerHTML = `<div class="hint-box-error">❌ JSON inválido — verifique o formato</div>`;
   }
 }
 
@@ -1885,7 +1893,7 @@ window.openAddProdModal=function(){
     </div>
     <div class="fg"><label>Preço de venda (R$)</label><input type="number" id="f-venda" value="0" step="0.01" min="0"></div>
     <div class="fg"><label>Código de barras (EAN)</label><input type="text" id="f-ean" placeholder="Ex: 7891234567890"></div>
-    <div style="background:#EAF3DE;border-radius:7px;padding:10px;font-size:11px;color:#27500A;margin-top:4px">
+    <div class="hint-box" style="margin-top:4px">
       💡 Após salvar o produto, clique em <strong>+ Lote</strong> para informar a quantidade e validade da primeira entrada.
     </div>`);
 }
@@ -1921,7 +1929,7 @@ window.openEntradaModal=function(prodId){
     <div class="fg"><label>Quantidade recebida</label><input type="number" id="f-qtd" value="1" min="1"></div>
     <div class="fg"><label>Validade deste lote</label><input type="date" id="f-val"></div>
     <div class="fg"><label>Observação (opcional)</label><input type="text" id="f-obs" placeholder="Ex: NF 88880, Fornecedor TRUE BRANDS"></div>
-    <div style="background:#EAF3DE;border-radius:7px;padding:9px;font-size:11px;color:#27500A;margin-top:4px">
+    <div class="hint-box" style="margin-top:4px">
       💡 Cada entrada cria um lote separado. Se já existir um lote com a mesma validade, ele será agrupado automaticamente.
     </div>`);
 }
@@ -1985,7 +1993,7 @@ window.openEditMovModal=function(histId){
     <div style="font-size:11px;color:#888;margin:-6px 0 10px">Valor total: <strong id="valor-total-editmov-preview">—</strong></div>`:''}
     <div class="fg"><label>Observação (opcional)</label><input type="text" id="f-obs" value="${obsExtraAtual.replace(/"/g,'&quot;')}" placeholder="Ex: Cliente João, cupom #123"></div>`
     :`<div class="fg"><label>Observação (opcional)</label><input type="text" id="f-obs" value="${(h.obs||'').replace(/"/g,'&quot;')}"></div>`}
-    <div style="background:#FAEEDA;border-radius:7px;padding:9px;font-size:11px;color:#633806;margin-top:4px">
+    <div class="hint-box-warn" style="margin-top:4px">
       💡 Se a quantidade mudar, o estoque é ajustado automaticamente pela diferença (via lote de estorno/ajuste).
     </div>`);
   atualizarValorTotalEditMov();
@@ -2222,7 +2230,7 @@ function renderClientesLista(){
             <button class="abtn ${c.ativo===false?'p':'m'}" onclick="toggleClienteAtivo('${c.id}')" title="${c.ativo===false?'Reativar':'Inativar'}">🗃️</button>
           </td>
         </tr>`;
-      }).join(''):'<tr><td colspan="8" style="text-align:center;padding:2rem;color:#aaa">Nenhum cliente encontrado.</td></tr>'}</tbody>
+      }).join(''):'<tr><td colspan="8"><div class="empty-state">Nenhum cliente encontrado.</div></td></tr>'}</tbody>
     </table></div></div>`;
   document.getElementById('clientes-content').innerHTML=html;
 }
@@ -2339,7 +2347,7 @@ function renderClientesAniversariantes(){
     <tbody>${lista.length?lista.map(c=>{
       const wa=c.celular?`https://wa.me/55${onlyDigits(c.celular)}`:null;
       return `<tr><td style="font-weight:700">${c.nome}</td><td>${new Date(c.nascimento+'T12:00:00').toLocaleDateString('pt-BR')}</td><td>${calcIdade(c.nascimento)}</td><td>${wa?`<a href="${wa}" target="_blank" style="color:#25D366;font-weight:700;text-decoration:none">📱 ${c.celular}</a>`:(c.celular||'—')}</td></tr>`;
-    }).join(''):'<tr><td colspan="4" style="text-align:center;padding:2rem;color:#aaa">Ninguém faz aniversário este mês.</td></tr>'}</tbody>
+    }).join(''):'<tr><td colspan="4"><div class="empty-state">Ninguém faz aniversário este mês.</div></td></tr>'}</tbody>
   </table></div></div>`;
   document.getElementById('clientes-content').innerHTML=html;
 }
@@ -2375,7 +2383,7 @@ window.openClienteModal=function(mode,id){
       <div class="fg"><label>Cidade</label><input type="text" id="f-cli-cidade" value="${c?(c.cidade||''):''}"></div>
     </div>
     <div class="fg" style="max-width:110px"><label>UF</label><input type="text" id="f-cli-uf" value="${c?(c.uf||''):''}" maxlength="2" style="text-transform:uppercase"></div>
-    ${mode!=='edit'?'<div style="background:#EAF3DE;border-radius:7px;padding:9px;font-size:11px;color:#27500A;margin-top:4px">💡 Só o nome é obrigatório — os outros dados podem ser completados depois.</div>':''}`);
+    ${mode!=='edit'?'<div class="hint-box" style="margin-top:4px">💡 Só o nome é obrigatório — os outros dados podem ser completados depois.</div>':''}`);
 }
 
 window.toggleClienteAtivo=function(id){
@@ -2490,12 +2498,12 @@ window.verificarSemCusto=function(){
 
   const corpo=`
     <div style="font-size:12px;color:#666;margin-bottom:12px">Encontrados <strong>${semCusto.length}</strong> produto(s) sem custo cadastrado:</div>
-    ${semCusto.map(p=>`<div style="border:1px solid #FAC775;background:#FAEEDA;border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+    ${semCusto.map(p=>`<div class="check-item">
       <div>
         <div style="font-weight:700;font-size:13px">${p.nome}</div>
         <div style="font-size:11px;color:#888">${p.cat} · ${qtdTotal(p.id)} un em estoque · venda R$ ${Number(p.venda||0).toFixed(2)}</div>
       </div>
-      <button onclick="closeModal();openEditProdModal('${p.id}')" style="border:1px solid #ddd;background:#fff;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer;font-weight:600;white-space:nowrap">🏷️ Definir custo</button>
+      <button onclick="closeModal();openEditProdModal('${p.id}')" class="btn-sm">🏷️ Definir custo</button>
     </div>`).join('')}`;
   openModal('🏷️ Produtos sem custo',corpo);
 }
@@ -2513,12 +2521,12 @@ window.verificarSemPreco=function(){
 
   const corpo=`
     <div style="font-size:12px;color:#666;margin-bottom:12px">Encontrados <strong>${semPreco.length}</strong> produto(s) sem preço de venda cadastrado:</div>
-    ${semPreco.map(p=>`<div style="border:1px solid #FAC775;background:#FAEEDA;border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+    ${semPreco.map(p=>`<div class="check-item">
       <div>
         <div style="font-weight:700;font-size:13px">${p.nome}</div>
         <div style="font-size:11px;color:#888">${p.cat} · ${qtdTotal(p.id)} un em estoque · custo R$ ${Number(p.custo||0).toFixed(2)}</div>
       </div>
-      <button onclick="closeModal();openEditProdModal('${p.id}')" style="border:1px solid #ddd;background:#fff;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer;font-weight:600;white-space:nowrap">💲 Definir preço</button>
+      <button onclick="closeModal();openEditProdModal('${p.id}')" class="btn-sm">💲 Definir preço</button>
     </div>`).join('')}`;
   openModal('💲 Produtos sem preço de venda',corpo);
 }
@@ -2540,12 +2548,12 @@ window.verificarSemValidade=function(){
 
   const corpo=`
     <div style="font-size:12px;color:#666;margin-bottom:12px">Encontrados <strong>${semVal.length}</strong> lote(s) sem validade cadastrada:</div>
-    ${semVal.map(({p,l})=>`<div style="border:1px solid #FAC775;background:#FAEEDA;border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+    ${semVal.map(({p,l})=>`<div class="check-item">
       <div>
         <div style="font-weight:700;font-size:13px">${p.nome}</div>
         <div style="font-size:11px;color:#888">${p.cat} · ${l.qtd} un ${l.obs?'· '+l.obs:''}</div>
       </div>
-      <button onclick="closeModal();openValLoteModal('${l.id}')" style="border:1px solid #ddd;background:#fff;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer;font-weight:600;white-space:nowrap">📅 Definir validade</button>
+      <button onclick="closeModal();openValLoteModal('${l.id}')" class="btn-sm">📅 Definir validade</button>
     </div>`).join('')}`;
   openModal('📅 Produtos sem validade',corpo);
 }
@@ -2588,7 +2596,7 @@ window.verificarDuplicados=function(){
     <div style="font-size:12px;color:#666;margin-bottom:12px">Encontrados <strong>${grupos.length}</strong> grupo(s) de produtos possivelmente duplicados:</div>
     ${grupos.map(g=>{
       const totalEstoque=g.reduce((s,p)=>s+qtdTotal(p.id),0);
-      return `<div style="border:1px solid #FAC775;background:#FAEEDA;border-radius:8px;padding:10px 12px;margin-bottom:10px">
+      return `<div class="check-item" style="margin-bottom:10px">
         <div style="font-weight:700;font-size:13px;margin-bottom:6px">${g[0].nome} <span style="font-weight:400;color:#888">(${g.length} cadastros · ${totalEstoque} un no total)</span></div>
         ${g.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;padding:4px 0;border-top:1px solid #f5e2bb">
           <span>${p.cat} · EAN: ${p.ean||'—'} · custo R$ ${Number(p.custo||0).toFixed(2)} · <strong>${qtdTotal(p.id)} un</strong></span>
