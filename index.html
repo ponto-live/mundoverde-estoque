@@ -283,20 +283,24 @@ tr.prod-row:hover td{background:#f5faf0}
     <div id="filtro-ativo-banner"></div>
     <div class="cat-filter" id="cat-filter"></div>
     <div class="table-wrap" style="overflow-x:auto">
-      <table style="min-width:760px">
+      <table style="min-width:1180px">
         <thead>
           <tr>
-            <th style="width:25%">Produto</th>
-            <th style="width:8%">Total</th>
-            <th style="width:17%">Lotes / Próx. vencimento</th>
-            <th style="width:9%">Custo</th>
-            <th style="width:9%">Venda</th>
-            <th style="width:10%">Giro 30d</th>
-            <th style="width:10%">Status</th>
-            <th style="width:12%">Ações</th>
+            <th style="width:19%">Produto</th>
+            <th style="width:6%">Total</th>
+            <th style="width:13%">Lotes / Próx. vencimento</th>
+            <th style="width:7%">Custo</th>
+            <th style="width:7%">Venda</th>
+            <th style="width:8%">Giro 30d</th>
+            <th style="width:7%" title="Vendas reais dos últimos 30 dias ÷ 30">Venda/dia</th>
+            <th style="width:7%" title="Estoque atual ÷ venda média/dia">Cobertura</th>
+            <th style="width:9%">Situação estoque</th>
+            <th style="width:7%" title="Quantidade para chegar a 30 dias de cobertura">Comprar</th>
+            <th style="width:8%">Status</th>
+            <th style="width:9%">Ações</th>
           </tr>
         </thead>
-        <tbody id="produtos-tbody"><tr><td colspan="8"><div class="empty-state">🔄 Carregando...</div></td></tr></tbody>
+        <tbody id="produtos-tbody"><tr><td colspan="12"><div class="empty-state">🔄 Carregando...</div></td></tr></tbody>
       </table>
     </div>
   </div>
@@ -345,7 +349,10 @@ tr.prod-row:hover td{background:#f5faf0}
   </div>
 
   <div id="tab-compras" class="tab-content">
-    <div class="sec-header"><span class="sec-title">🛒 Sugestão de compras</span></div>
+    <div class="sec-header"><span class="sec-title">🛒 Sugestão de compras</span>
+      <button class="btn-green" onclick="gerarListaCompra()">🛒 GERAR LISTA DE COMPRA</button>
+    </div>
+    <div id="compras-inteligente"></div>
     <div id="compras-list"></div>
   </div>
 
@@ -390,6 +397,27 @@ tr.prod-row:hover td{background:#f5faf0}
 
   <!-- GIRO DE ESTOQUE -->
   <div id="tab-giro" class="tab-content">
+    <div class="sec-header"><span class="sec-title">📈 Inteligência de Estoque</span></div>
+    <div class="card" style="margin-bottom:20px">
+      <h3>🧠 Cobertura de estoque</h3>
+      <div class="metric-sub" style="margin-bottom:12px">Base fixa: vendas reais dos últimos 30 dias (só saída do tipo Venda). Clique num card para filtrar.</div>
+      <div id="intel-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:12px"></div>
+      <div id="intel-filtro-banner"></div>
+      <input type="text" class="search-bar" id="intel-busca" placeholder="🔍 Buscar produto..." oninput="renderIntelGiro()" style="margin-bottom:8px">
+      <div class="table-wrap" style="overflow:auto;max-height:520px">
+        <table style="min-width:560px">
+          <thead><tr>
+            <th style="width:36%">Produto</th>
+            <th style="width:11%">Estoque</th>
+            <th style="width:12%">Venda/dia</th>
+            <th style="width:12%">Cobertura</th>
+            <th style="width:17%">Situação</th>
+            <th style="width:12%">Comprar</th>
+          </tr></thead>
+          <tbody id="intel-tbody"></tbody>
+        </table>
+      </div>
+    </div>
     <div class="sec-header"><span class="sec-title">📈 Giro de estoque</span></div>
     <div id="giro-filtros" style="display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap"></div>
     <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
@@ -579,6 +607,10 @@ onValue(ref(db,'historico'), snap=>{
   if(document.getElementById('tab-movimentos').classList.contains('active')) renderHistorico();
   if(document.getElementById('tab-dashboard').classList.contains('active')) renderDashboard();
   if(document.getElementById('tab-clientes')?.classList.contains('active')) renderClientes();
+  // Inteligência de estoque depende do histórico de vendas
+  renderTabela();
+  if(document.getElementById('tab-compras')?.classList.contains('active')) renderCompras();
+  if(document.getElementById('tab-giro')?.classList.contains('active')) renderIntelGiro();
 });
 
 let tarefas=[];
@@ -649,6 +681,56 @@ function loteTag(val){
   return `<span class="lote-tag" style="background:#EAF3DE;color:#27500A">✅${d}d</span>`;
 }
 function categorias(){ return ['Todos',...[...new Set(produtos.map(p=>p.cat))].sort()]; }
+
+// ── INTELIGÊNCIA DE ESTOQUE (1ª versão: vendas reais dos últimos 30 dias) ──
+// Só conta saída do tipo Venda (reaproveita dashVendasPorProduto). Sem venda no período = sem histórico, nunca inventa venda.
+const INTEL_DIAS=30;      // janela de vendas
+const INTEL_ALVO=30;      // cobertura-alvo da sugestão de compra (dias)
+const INTEL_SIT={
+  critico:  {key:'critico',  label:'🚨 CRÍTICO',       cls:'badge-out',   cor:'#A32D2D', ordem:0},
+  urgente:  {key:'urgente',  label:'🔴 URGENTE',       cls:'badge-out',   cor:'#A32D2D', ordem:1},
+  atencao:  {key:'atencao',  label:'🟠 ATENÇÃO',       cls:'badge-low',   cor:'#BA7517', ordem:2},
+  monitorar:{key:'monitorar',label:'🟡 MONITORAR',     cls:'badge-warn',  cor:'#8a6d00', ordem:3},
+  confort:  {key:'confort',  label:'🟢 CONFORTÁVEL',   cls:'badge-ok',    cor:'#3B6D11', ordem:4},
+  semhist:  {key:'semhist',  label:'⚪ SEM HISTÓRICO', cls:'badge-noval', cor:'#888',    ordem:5}
+};
+function intelVendas30(){ return dashVendasPorProduto(INTEL_DIAS); }
+function intelProduto(p,vendas30){
+  const qtd=qtdTotal(p.id);
+  const vend=(vendas30||intelVendas30())[p.nome]||0;
+  const vmd=vend/INTEL_DIAS;
+  let cob=null, sit;
+  if(vend>0) cob=Math.floor(qtd/vmd);
+  if(qtd===0) sit=INTEL_SIT.critico;
+  else if(vend<=0) sit=INTEL_SIT.semhist;
+  else if(cob===0) sit=INTEL_SIT.critico;
+  else if(cob<=7) sit=INTEL_SIT.urgente;
+  else if(cob<=15) sit=INTEL_SIT.atencao;
+  else if(cob<=30) sit=INTEL_SIT.monitorar;
+  else sit=INTEL_SIT.confort;
+  // quantidade sugerida = (venda média/dia × alvo) − estoque atual; nunca negativa; sem histórico = sem sugestão
+  const comprar=vend>0?Math.max(0,Math.ceil(vmd*INTEL_ALVO-qtd-1e-9)):null;
+  return {p,qtd,vend,vmd,cob,sit,comprar};
+}
+function intelLista(){
+  const v=intelVendas30();
+  return produtos.filter(p=>!p.arquivado).map(p=>intelProduto(p,v));
+}
+function intelResumo(lista){
+  lista=lista||intelLista();
+  const r={critico:0,urgente:0,atencao:0,monitorar:0,confort:0,semhist:0,comprar:0,semgiro:0};
+  lista.forEach(i=>{ r[i.sit.key]++; if(i.comprar>0) r.comprar++; if(i.sit.key==='semhist'&&i.qtd>0) r.semgiro++; });
+  return r;
+}
+function intelFmtVmd(i){ return i.vend>0?i.vmd.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:2})+' un':'<span style="color:#aaa">—</span>'; }
+function intelFmtCob(i){ return i.cob===null?(i.qtd===0?'0d':'<span style="color:#aaa">—</span>'):i.cob+'d'; }
+function intelFmtComprar(i){ return i.comprar===null?'<span style="color:#aaa" title="Sem vendas nos últimos 30 dias — avaliar manualmente">—</span>':i.comprar>0?`<span style="color:#3B6D11">${i.comprar} un</span>`:'<span style="color:#aaa">0</span>'; }
+function intelOrdenar(a,b){
+  if(a.sit.ordem!==b.sit.ordem) return a.sit.ordem-b.sit.ordem;
+  const ca=a.cob===null?Infinity:a.cob, cb=b.cob===null?Infinity:b.cob;
+  if(ca!==cb) return ca-cb;
+  return b.vmd-a.vmd;
+}
 
 // ── RENDER ALL ────────────────────────────────────────────────────
 function renderAll(){ renderMetrics(); renderAlertas(); renderCats(); renderTabela(); if(document.getElementById('tab-dashboard')?.classList.contains('active')) renderDashboard(); }
@@ -748,7 +830,8 @@ window.renderTabela=function(){
   } else {
     if(bannerEl) bannerEl.innerHTML='';
   }
-  if(!lista.length){tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state">Nenhum produto encontrado.</div></td></tr>`;return;}
+  if(!lista.length){tbody.innerHTML=`<tr><td colspan="12"><div class="empty-state">Nenhum produto encontrado.</div></td></tr>`;return;}
+  const intelVendas=intelVendas30();
 
   let html='';
   lista.forEach(p=>{
@@ -760,6 +843,7 @@ window.renderTabela=function(){
     const pv=proxVencimento(p.id);
     const ls=lotesDosProd(p.id);
     const isExp=expandidos.has(p.id);
+    const ie=intelProduto(p,intelVendas);
 
     // Linha do produto
     html+=`<tr class="prod-row" onclick="toggleExpand('${p.id}')">
@@ -781,6 +865,10 @@ window.renderTabela=function(){
         <div style="font-size:10px;color:#888">${g} un/mês</div>
         <div class="giro-bar"><div class="giro-fill" style="width:${pct}%;background:${cor}"></div></div>
       </td>
+      <td style="font-size:12px">${intelFmtVmd(ie)}</td>
+      <td style="font-size:12px;font-weight:700;color:${ie.sit.cor}">${intelFmtCob(ie)}</td>
+      <td><span class="badge ${ie.sit.cls}" style="white-space:nowrap">${ie.sit.label}</span></td>
+      <td style="font-size:12px;font-weight:700">${intelFmtComprar(ie)}</td>
       <td><span class="badge ${st.cls}">${st.label}</span></td>
       <td onclick="event.stopPropagation()">
         <button class="abtn p" onclick="openEntradaModal('${p.id}')" title="Nova entrada / lote">+ Lote</button>
@@ -790,7 +878,7 @@ window.renderTabela=function(){
 
     // Linhas de lotes (expandidas)
     if(isExp && ls.length){
-      html+=`<tr><td colspan="8" style="padding:0;background:#f5fdf0">
+      html+=`<tr><td colspan="12" style="padding:0;background:#f5fdf0">
         <table style="width:100%;border-collapse:collapse">
           <thead><tr style="background:#e8f5d4">
             <td style="padding:5px 12px 5px 32px;font-size:10px;font-weight:700;color:#27500A;width:28%">LOTE</td>
@@ -989,7 +1077,56 @@ window.renderHistorico=function(){
     </div>`).join('');
 }
 
+let comprasListaAberta=false;
+window.gerarListaCompra=function(){ comprasListaAberta=true; renderCompras(); document.getElementById('compras-inteligente')?.scrollIntoView({behavior:'smooth',block:'start'}); }
+window.fecharListaCompra=function(){ comprasListaAberta=false; renderCompras(); }
+window.abrirListaCompra=function(){ comprasListaAberta=true; dashIrTab('compras'); document.getElementById('compras-inteligente')?.scrollIntoView({behavior:'smooth',block:'start'}); }
+
+function renderListaCompraInteligente(){
+  const box=document.getElementById('compras-inteligente');
+  if(!box) return;
+  if(!comprasListaAberta){ box.innerHTML=''; return; }
+  const todos=intelLista();
+  const lista=todos.filter(i=>i.comprar>0).sort(intelOrdenar);
+  const zeradosSemHist=todos.filter(i=>i.qtd===0&&i.vend===0);
+  const totUn=lista.reduce((s,i)=>s+i.comprar,0);
+  const totCusto=lista.reduce((s,i)=>s+i.comprar*(Number(i.p.custo)||0),0);
+  const semCusto=lista.filter(i=>!(Number(i.p.custo)>0)).length;
+  let html=`<div class="card" style="margin-bottom:16px">
+    <h3 style="justify-content:space-between;flex-wrap:wrap">🧠 Lista de compra inteligente <button class="btn-outline" onclick="fecharListaCompra()">✕ Fechar lista</button></h3>
+    <div class="metric-sub" style="margin-bottom:10px">Base: vendas reais dos últimos ${INTEL_DIAS} dias · meta de ${INTEL_ALVO} dias de cobertura · sugestão = (venda/dia × ${INTEL_ALVO}) − estoque atual</div>`;
+  if(!lista.length){
+    html+='<div class="empty-state" style="padding:1.5rem">✅ Nenhum produto com histórico de venda precisa de reposição agora.</div>';
+  } else {
+    html+=`<div style="overflow-x:auto"><table style="width:100%;min-width:560px;border-collapse:collapse">
+      <thead><tr style="text-align:left;font-size:10px;color:#999;text-transform:uppercase">
+        <th style="padding:4px 6px 8px">Produto</th><th style="padding:4px 6px 8px">Estoque</th><th style="padding:4px 6px 8px">Cobertura</th><th style="padding:4px 6px 8px">Sugestão de compra</th><th style="padding:4px 6px 8px;text-align:right">Custo estimado</th>
+      </tr></thead><tbody>${lista.map(i=>{
+        const c=Number(i.p.custo)||0;
+        return `<tr style="border-top:1px solid #f0f0ea">
+          <td style="padding:6px"><div style="font-weight:700;font-size:12px">${i.p.nome}</div><div style="font-size:10px;color:#aaa">${i.p.cat||''} · ${intelFmtVmd(i)}/dia</div></td>
+          <td style="padding:6px;font-size:12px;font-weight:700">${i.qtd} un</td>
+          <td style="padding:6px;font-size:12px"><span style="font-weight:700;color:${i.sit.cor}">${intelFmtCob(i)}</span> <span class="badge ${i.sit.cls}" style="white-space:nowrap">${i.sit.label}</span></td>
+          <td style="padding:6px;font-size:14px;font-weight:700;color:#3B6D11">${i.comprar} un</td>
+          <td style="padding:6px;font-size:12px;font-weight:600;text-align:right">${c>0?fmtBRL(i.comprar*c):'<span style="color:#aaa">sem custo</span>'}</td>
+        </tr>`;}).join('')}</tbody>
+      <tfoot><tr style="border-top:2px solid #e0e0d8">
+        <td style="padding:8px 6px;font-size:12px;font-weight:700">Total: ${lista.length} produto(s)</td><td></td><td></td>
+        <td style="padding:8px 6px;font-size:13px;font-weight:700;color:#3B6D11">${totUn} un</td>
+        <td style="padding:8px 6px;font-size:13px;font-weight:700;text-align:right">${fmtBRL(totCusto)}</td>
+      </tr></tfoot></table></div>`;
+    if(semCusto) html+=`<div class="metric-sub" style="margin-top:8px">⚠️ ${semCusto} produto(s) sem custo cadastrado — não entram no custo estimado.</div>`;
+  }
+  if(zeradosSemHist.length){
+    html+=`<details style="margin-top:10px;font-size:12px;color:#888"><summary style="cursor:pointer">⚪ ${zeradosSemHist.length} produto(s) zerado(s) sem venda nos últimos ${INTEL_DIAS} dias — sem sugestão automática, avaliar manualmente</summary>
+      <div style="margin-top:6px;line-height:1.7">${zeradosSemHist.map(i=>i.p.nome).join(' · ')}</div></details>`;
+  }
+  html+='</div>';
+  box.innerHTML=html;
+}
+
 function renderCompras(){
+  renderListaCompraInteligente();
   const list=document.getElementById('compras-list');
   const sug=produtos.filter(p=>qtdTotal(p.id)<=p.min).map(p=>{
     const qtd=qtdTotal(p.id);
@@ -1344,7 +1481,43 @@ function calcularPrimeiraEntrada(){
   return primeiras;
 }
 
+let intelFiltro=null;
+window.filtrarIntelPor=function(k){
+  intelFiltro=(intelFiltro===k)?null:k;
+  renderIntelGiro();
+  document.getElementById('intel-cards')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
+window.renderIntelGiro=function(){
+  const cardsEl=document.getElementById('intel-cards'), tbody=document.getElementById('intel-tbody');
+  if(!cardsEl||!tbody) return;
+  const todos=intelLista();
+  const res=intelResumo(todos);
+  const cards=[
+    {k:'critico',  t:'🚨 Crítico',       s:'zerado / 0 dias'},
+    {k:'urgente',  t:'🔴 Até 7 dias',    s:'acaba em até 7d'},
+    {k:'atencao',  t:'🟠 8–15 dias',     s:'atenção'},
+    {k:'monitorar',t:'🟡 16–30 dias',    s:'monitorar'},
+    {k:'confort',  t:'🟢 Confortável',   s:'acima de 30d'},
+    {k:'semhist',  t:'⚪ Sem vendas',    s:'sem venda em 30d'}
+  ];
+  cardsEl.innerHTML=cards.map(c=>`<div class="metric" style="cursor:pointer;text-align:center;${intelFiltro===c.k?'outline:2px solid #3B6D11':''}" onclick="filtrarIntelPor('${c.k}')" title="Clique para filtrar">
+      <div class="metric-label">${c.t}</div><div class="metric-value" style="color:${INTEL_SIT[c.k].cor}">${res[c.k]}</div><div class="metric-sub">${c.s}</div></div>`).join('');
+  const banner=document.getElementById('intel-filtro-banner');
+  if(banner) banner.innerHTML=intelFiltro?`<div class="filter-banner">Mostrando: ${INTEL_SIT[intelFiltro].label} (${res[intelFiltro]}) <button onclick="filtrarIntelPor('${intelFiltro}')">✕ Ver todos</button></div>`:'';
+  const busca=(document.getElementById('intel-busca')?.value||'').toLowerCase();
+  const lista=todos.filter(i=>(!intelFiltro||i.sit.key===intelFiltro)&&(!busca||i.p.nome.toLowerCase().includes(busca))).sort(intelOrdenar);
+  tbody.innerHTML=lista.length?lista.map(i=>`<tr>
+      <td><div style="font-weight:700;font-size:12px">${i.p.nome}</div><div style="font-size:10px;color:#aaa">${i.p.cat||''}</div></td>
+      <td style="font-weight:700">${i.qtd} un</td>
+      <td style="font-size:12px">${intelFmtVmd(i)}</td>
+      <td style="font-weight:700;color:${i.sit.cor}">${intelFmtCob(i)}</td>
+      <td><span class="badge ${i.sit.cls}" style="white-space:nowrap">${i.sit.label}</span></td>
+      <td style="font-weight:700">${intelFmtComprar(i)}</td>
+    </tr>`).join(''):'<tr><td colspan="6"><div class="empty-state" style="padding:1rem">Nenhum produto nesta situação.</div></td></tr>';
+}
+
 window.renderGiro=function(){
+  renderIntelGiro();
   const filtros=document.getElementById('giro-filtros');
   const opcoes=[{l:'7 dias',v:7},{l:'15 dias',v:15},{l:'30 dias',v:30},{l:'3 meses',v:90}];
   filtros.innerHTML=opcoes.map(o=>`<button class="cat-chip${giroPeriodo===o.v?' active':''}" onclick="setGiroPeriodo(${o.v})">${o.l}</button>`).join('');
@@ -1630,6 +1803,11 @@ window.dashIrGiro=function(motivo){
   dashIrTab('giro');
   if(motivo) filtrarGiroPor(motivo);
 }
+window.dashIrIntel=function(k){
+  intelFiltro=null;
+  dashIrTab('giro');
+  if(k) filtrarIntelPor(k);
+}
 
 let dashPeriodo=7;
 window.setDashPeriodo=function(d){dashPeriodo=d; renderDashboard();}
@@ -1716,7 +1894,28 @@ window.renderDashboard=function(){
 
   const periodoLabels={1:'Hoje',7:'7 dias',30:'30 dias',90:'90 dias'};
 
+  // Assistente de estoque (inteligência 30 dias)
+  const intelRes=intelResumo();
+  const horaAgora=hojeDt.getHours();
+  const saudacao=horaAgora<12?'BOM DIA':horaAgora<18?'BOA TARDE':'BOA NOITE';
+
   const html=`
+    <div class="dash-card" id="dash-assistente" style="margin-bottom:18px;border:1px solid #cfe3b8;background:#f7fbf2">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+        <div>
+          <div style="font-size:17px;font-weight:800;color:var(--verde)">🌿 ${saudacao}, MUNDO VERDE!</div>
+          <div class="metric-sub">Seu resumo de estoque de hoje.</div>
+        </div>
+        <button class="btn-green" onclick="abrirListaCompra()">🛒 VER LISTA DE COMPRA</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+        <div class="metric" style="cursor:pointer" onclick="dashIrIntel('critico')"><div class="metric-label">🚨 Críticos</div><div class="metric-value" style="color:var(--vermelho)">${intelRes.critico}</div><div class="metric-sub">zerados ou acabando hoje</div></div>
+        <div class="metric" style="cursor:pointer" onclick="abrirListaCompra()"><div class="metric-label">🛒 Para comprar</div><div class="metric-value" style="color:var(--laranja)">${intelRes.comprar}</div><div class="metric-sub">abaixo de 30 dias de cobertura</div></div>
+        <div class="metric" style="cursor:pointer" onclick="dashIrIntel('confort')"><div class="metric-label">📦 Confortável</div><div class="metric-value" style="color:var(--verde)">${intelRes.confort}</div><div class="metric-sub">mais de 30 dias de estoque</div></div>
+        <div class="metric" style="cursor:pointer" onclick="dashIrIntel('semhist')"><div class="metric-label">💤 Sem giro</div><div class="metric-value" style="color:#888">${intelRes.semgiro}</div><div class="metric-sub">com estoque, sem venda em 30d</div></div>
+      </div>
+    </div>
+
     <div class="metrics" style="margin-bottom:18px">
       <div class="metric" style="cursor:pointer" onclick="dashIrEstoque('')"><div class="metric-label">📦 Produtos</div><div class="metric-value">${ativos.length}</div><div class="metric-sub">cadastrados</div></div>
       <div class="metric" style="cursor:pointer;border:1px solid #FAC775" onclick="dashIrEstoque('baixo')"><div class="metric-label">⚠️ Estoque crítico</div><div class="metric-value" style="color:var(--laranja)">${estoqueCritico.length}</div><div class="metric-sub">clique para ver</div></div>
