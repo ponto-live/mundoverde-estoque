@@ -1806,7 +1806,7 @@ function dashVendasPorProduto(dias){
     if(dias===1){ if(h.data!==hojeStr) return; }
     else {
       const partes=h.data.split('/'); if(partes.length!==3) return;
-      const dh=new Date(`${partes[2]}-${partes[1]}-${partes[0]}`);
+      const dh=new Date(+partes[2],+partes[1]-1,+partes[0]); // horário local
       if(dh<corte) return;
     }
     vendas[h.produto]=(vendas[h.produto]||0)+h.qtd;
@@ -1832,12 +1832,13 @@ window.renderDashboard=function(){
   const valorVendidoMes=historico.filter(h=>{
     if(h.tipo!=='saida'||!h.obs||!h.obs.startsWith('Venda')) return false;
     const p=h.data.split('/'); if(p.length!==3) return false;
-    const d=new Date(`${p[2]}-${p[1]}-${p[0]}`);
+    const d=new Date(+p[2],+p[1]-1,+p[0]); // horário local (evita perder o dia 1 por fuso)
     return d>=inicioMes;
   }).reduce((s,h)=>{
     // Mesmo critério do card "Valor vendido" da aba Entradas: preço de venda cadastrado × quantidade
     const pv=produtos.find(x=>x.nome===h.produto);
-    if(pv&&pv.venda>0) return s+pv.venda*h.qtd;
+    if(!pv) return s;
+    if(pv.venda>0) return s+pv.venda*h.qtd;
     semPrecoVendaMes++;
     return s;
   },0);
