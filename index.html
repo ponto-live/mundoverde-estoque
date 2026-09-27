@@ -1636,8 +1636,10 @@ window.renderGiro=function(){
   const tbody=document.getElementById('giro-tbody');
   tbody.innerHTML=paginado.map(({p,g,qtd,cobertura,diasSemVenda,nuncaVendeu,diasParaVencer})=>{
     const sit=situacao(cobertura,g);
-    const cobStr=cobertura>=999?'∞':cobertura+'d';
+    // Sem venda no período não dá pra calcular cobertura (divisão por zero) — mostra aviso em vez de ∞
+    const cobStr=g===0?(qtd>0?'<span style="font-weight:400;color:#aaa;font-size:11px">— sem venda no período</span>':'0d'):cobertura+'d';
     const cobCor=cobertura>=90?'#A32D2D':cobertura<=15?'#BA7517':'#3B6D11';
+    const cobTitle=g===0?'Sem venda no período selecionado — não dá pra calcular quantos dias o estoque dura':'Dias que o estoque atual vai durar';
     const dsvStr=diasSemVenda===null?'—':diasSemVenda+'d'+(nuncaVendeu?'*':'');
     const dsvCor=diasSemVenda===null?'#aaa':diasSemVenda>=30?'#A32D2D':diasSemVenda>=15?'#BA7517':'#3B6D11';
     const dsvPeso=(diasSemVenda!==null&&diasSemVenda>=15)?'font-weight:700':'';
@@ -1649,7 +1651,7 @@ window.renderGiro=function(){
       <td><div style="font-weight:700;font-size:12px">${p.nome}</div><div style="font-size:10px;color:#aaa">${p.cat}</div></td>
       <td style="font-weight:700">${qtd} un</td>
       <td>${g} un/mês</td>
-      <td style="font-weight:700;color:${cobCor}" title="Dias que o estoque atual vai durar">${cobStr}</td>
+      <td style="font-weight:700;color:${cobCor}" title="${cobTitle}">${cobStr}</td>
       <td style="color:${dsvCor};${dsvPeso}" title="${dsvTitle}">${dsvStr}</td>
       <td style="color:${valCor};${valPeso}" title="Dias até o vencimento do lote mais próximo">${valStr}</td>
       <td><span class="badge ${sit.cls}">${sit.label}</span></td>
@@ -1659,11 +1661,14 @@ window.renderGiro=function(){
   // Botões de paginação
   const pag=document.getElementById('giro-paginacao');
   if(totalPags<=1){pag.innerHTML='';return;}
-  let pagHtml='';
-  for(let i=1;i<=totalPags;i++){
-    pagHtml+=`<button onclick="setGiroPage(${i})" style="padding:5px 12px;border:1px solid ${i===giroPage?'#3B6D11':'#ddd'};border-radius:6px;font-size:12px;cursor:pointer;background:${i===giroPage?'#3B6D11':'#fff'};color:${i===giroPage?'#fff':'#555'};font-family:Arial,sans-serif">${i}</button>`;
-  }
-  pag.innerHTML=`<span style="font-size:12px;color:#888;align-self:center">${total} produtos · Página ${giroPage} de ${totalPags}</span>${pagHtml}`;
+  // Paginação compacta: ‹ Anterior · página atual · Próxima ›
+  const pagBtn=(alvo,label,ativo)=>`<button ${ativo?`onclick="setGiroPage(${alvo})"`:'disabled'} style="padding:6px 14px;border:1px solid #ddd;border-radius:6px;font-size:12px;cursor:${ativo?'pointer':'default'};background:#fff;color:${ativo?'#3B6D11':'#ccc'};font-weight:600;font-family:Arial,sans-serif">${label}</button>`;
+  pag.innerHTML=`<span style="font-size:12px;color:#888;align-self:center;margin-right:auto">${total} produtos</span>
+    ${pagBtn(1,'«',giroPage>1)}
+    ${pagBtn(giroPage-1,'‹ Anterior',giroPage>1)}
+    <span style="font-size:12px;color:#555;align-self:center;padding:0 6px">Página <strong style="color:#3B6D11">${giroPage}</strong> de ${totalPags}</span>
+    ${pagBtn(giroPage+1,'Próxima ›',giroPage<totalPags)}
+    ${pagBtn(totalPags,'»',giroPage<totalPags)}`;
 }
 window.setGiroPeriodo=function(d){
   giroPeriodo=d;giroPage=1;
@@ -1843,14 +1848,17 @@ window.renderDashboard=function(){
   const ultimasVendas=calcularUltimasVendas();
   const hojeDt=new Date();
   const inicioMes=new Date(hojeDt.getFullYear(),hojeDt.getMonth(),1);
+  let semPrecoVendaMes=0;
   const valorVendidoMes=historico.filter(h=>{
     if(h.tipo!=='saida'||!h.obs||!h.obs.startsWith('Venda')) return false;
     const p=h.data.split('/'); if(p.length!==3) return false;
     const d=new Date(`${p[2]}-${p[1]}-${p[0]}`);
     return d>=inicioMes;
   }).reduce((s,h)=>{
-    if(typeof h.valorTotal==='number') return s+h.valorTotal;
-    if(typeof h.valorUnitario==='number') return s+h.valorUnitario*h.qtd;
+    // Mesmo critério do card "Valor vendido" da aba Entradas: preço de venda cadastrado × quantidade
+    const pv=produtos.find(x=>x.nome===h.produto);
+    if(pv&&pv.venda>0) return s+pv.venda*h.qtd;
+    semPrecoVendaMes++;
     return s;
   },0);
   const semGiro30=ativos.filter(p=>{
@@ -1921,7 +1929,7 @@ window.renderDashboard=function(){
       <div class="metric" style="cursor:pointer;border:1px solid #FAC775" onclick="dashIrEstoque('baixo')"><div class="metric-label">⚠️ Estoque crítico</div><div class="metric-value" style="color:var(--laranja)">${estoqueCritico.length}</div><div class="metric-sub">clique para ver</div></div>
       <div class="metric" style="cursor:pointer;border:1px solid #F7C1C1" onclick="dashIrEstoque('vencendo')"><div class="metric-label">⏰ Vencendo em 60d</div><div class="metric-value" style="color:var(--vermelho)">${lotesVencendo60.length}</div><div class="metric-sub">clique para ver</div></div>
       <div class="metric" style="cursor:pointer" onclick="dashIrGiro('estagnados')"><div class="metric-label">🐢 Sem giro</div><div class="metric-value" style="color:var(--laranja)">${semGiro30.length}</div><div class="metric-sub">sem venda há 30+ dias</div></div>
-      <div class="metric"><div class="metric-label">💰 Vendido no mês</div><div class="metric-value" style="font-size:18px;color:var(--verde)">${fmtBRL(valorVendidoMes)}</div><div class="metric-sub">valor real das vendas</div></div>
+      <div class="metric"><div class="metric-label">💰 Vendido no mês</div><div class="metric-value" style="font-size:18px;color:var(--verde)">${fmtBRL(valorVendidoMes)}</div><div class="metric-sub">preço de venda · do dia 1 até hoje${semPrecoVendaMes?` (${semPrecoVendaMes} sem preço cadastrado)`:''}</div></div>
     </div>
 
     <div class="dash-grid">
@@ -2144,6 +2152,7 @@ window.openSaidaModal=function(prodId,loteId){
     Lote: ${val} · Disponível: <strong style="color:#3B6D11">${l.qtd} un</strong></p>
     <div class="fg"><label>Quantidade</label><input type="number" id="f-qtd" value="1" min="1" max="${l.qtd}" oninput="atualizarValorTotalVenda()"></div>
     <div class="fg"><label>Tipo de saída</label><select id="f-tipo" onchange="toggleClienteVenda()">
+      <option value="" selected disabled>— selecione —</option>
       <option value="Venda">🛒 Venda</option>
       <option value="Descarte — vencimento">🗑️ Descarte — vencimento</option>
       <option value="Descarte — avaria">💔 Descarte — avaria</option>
@@ -2151,7 +2160,7 @@ window.openSaidaModal=function(prodId,loteId){
       <option value="Ajuste de inventário">📋 Ajuste de inventário</option>
     </select></div>
     <div id="valor-venda-wrap">
-      <div class="fg"><label>Valor unitário praticado (R$)</label><input type="number" id="f-valor-unit" value="${Number(p.venda||0).toFixed(2)}" step="0.01" min="0" oninput="atualizarValorTotalVenda()"></div>
+      <div class="fg"><label>Valor unitário praticado (R$)</label><input type="number" id="f-valor-unit" value="${Number(p.venda)>0?Number(p.venda).toFixed(2):''}" step="0.01" min="0" placeholder="Informe o valor de venda" oninput="atualizarValorTotalVenda()"></div>
       <div style="font-size:11px;color:#888;margin:-6px 0 10px">Total desta venda: <strong id="valor-total-preview">R$ 0,00</strong></div>
     </div>
     <div class="fg"><label>Observação (opcional)</label><input type="text" id="f-obs" placeholder="Ex: cupom #123"></div>
@@ -2166,6 +2175,7 @@ window.openSaidaModal=function(prodId,loteId){
         </div>
       </div>
     </div>`);
+  toggleClienteVenda();
   atualizarValorTotalVenda();
 }
 
@@ -2978,6 +2988,11 @@ window.confirmModal=function(){
     const qtd=parseInt(document.getElementById('f-qtd').value)||0;
     if(qtd<=0){alert('Informe a quantidade.');return;}
     const tipo=document.getElementById('f-tipo').value;
+    if(!tipo){alert('Selecione o tipo de saída.');return;}
+    if(tipo==='Venda'){
+      const vu=parseFloat(document.getElementById('f-valor-unit')?.value);
+      if(isNaN(vu)||vu<=0){alert('Informe o valor de venda (maior que zero).');document.getElementById('f-valor-unit')?.focus();return;}
+    }
     const obsExtra=document.getElementById('f-obs').value;
     const obs=tipo+(obsExtra?' — '+obsExtra:'');
     const l=lotes.find(x=>x.id===selLoteId);
