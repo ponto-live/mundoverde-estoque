@@ -674,6 +674,7 @@ const db = getDatabase(app);
 let produtos  = [];   // [{id, nome, cat, ean, custo, min, saidas30}]
 let lotes     = [];   // [{id, prodId, qtd, validade, obs, ts}]
 let historico = [];
+let registrosCliente = []; // registros informativos do histórico do cliente — não afetam estoque/faturamento
 let filtrocat = 'Todos';
 let modalMode = '', selProdId = null, selLoteId = null;
 let expandidos = new Set();
@@ -753,6 +754,12 @@ onValue(ref(db,'historico'), snap=>{
   renderTabela();
   if(document.getElementById('tab-compras')?.classList.contains('active')) renderCompras();
   if(document.getElementById('tab-giro')?.classList.contains('active')) renderIntelGiro();
+});
+
+onValue(ref(db,'registrosCliente'), snap=>{
+  const data=snap.val();
+  registrosCliente=data?Object.entries(data).map(([id,v])=>({...v,id})).sort((a,b)=>(b.ts||0)-(a.ts||0)):[];
+  if(document.getElementById('tab-clientes')?.classList.contains('active')) renderClientes();
 });
 
 let tarefas=[];
@@ -2464,8 +2471,13 @@ window.buscarCEP=async function(){
 // (o sistema não tem conceito de "pedido/cupom" agrupando itens — preserva isso,
 // não inventa um agrupamento por dia que não existe nos dados)
 function clienteVendas(clienteId){
-  return historico.filter(h=>h.tipo==='saida'&&h.obs&&h.obs.startsWith('Venda')&&h.clienteId===clienteId)
-    .sort((a,b)=>b.ts-a.ts);
+  // Junta vendas reais (historico) com registros informativos feitos pelo cadastro do cliente.
+  // Os registros informativos ficam em outro nó do Firebase e nunca entram em Dashboard/estoque.
+  const vendasReais=historico.filter(h=>h.tipo==='saida'&&h.obs&&h.obs.startsWith('Venda')&&h.clienteId===clienteId)
+    .map(h=>({...h,_origem:'venda'}));
+  const registros=registrosCliente.filter(r=>r.clienteId===clienteId)
+    .map(r=>({...r,_origem:'registro'}));
+  return [...vendasReais,...registros].sort((a,b)=>(b.ts||0)-(a.ts||0));
 }
 
 function clienteResumo(clienteId){
@@ -2559,7 +2571,7 @@ function renderClientesLista(){
           <td>${fmtBRL(r.valorTotal)}</td>
           <td style="white-space:nowrap">
             <button class="abtn v" onclick="openClientePerfil('${c.id}')" title="Ver cadastro">👁️</button>
-            <button class="cliente-venda-abtn" onclick="abrirCompraCliente('${c.id}')" title="Registrar venda para este cliente">🛒 Venda</button>
+            <button class="cliente-venda-abtn" onclick="abrirCompraCliente('${c.id}')" title="Registrar compra no histórico do cliente">📝 Registro</button>
             <button class="abtn e" onclick="openClienteModal('edit','${c.id}')" title="Editar">✏️</button>
             <button class="abtn ${c.ativo===false?'p':'m'}" onclick="toggleClienteAtivo('${c.id}')" title="${c.ativo===false?'Reativar':'Inativar'}">🗃️</button>
           </td>
@@ -2758,7 +2770,8 @@ window.openClientePerfil=function(id){
         <div style="margin-bottom:3px"><strong>Categoria preferida:</strong> ${r.catTop||'—'}</div>
       </div>
     </div>
-    <div class="cliente-perfil-acoes"><button class="cliente-compra-btn" onclick="event.preventDefault();abrirCompraCliente('${id}')">🛒 Registrar venda</button><button class="btn-green" onclick="event.preventDefault();openClienteModal('edit','${id}')">✏️ Editar cadastro</button></div>
+    <div class="cliente-perfil-acoes"><button class="cliente-compra-btn" onclick="event.preventDefault();abrirCompraCliente('${id}')">📝 Registrar compra</button><button class="btn-green" onclick="event.preventDefault();openClienteModal('edit','${id}')">✏️ Editar cadastro</button></div>
+    <div style="font-size:10px;color:#777;margin:-4px 0 10px">📝 Registro de relacionamento: não altera estoque nem vendas.</div>
     <div style="font-weight:700;margin-bottom:6px;color:#888;font-size:10px;text-transform:uppercase">Histórico de compras (${r.numCompras} lançamento(s))</div>
     <div style="max-height:220px;overflow-y:auto;border:1px solid #eee;border-radius:8px">
       ${r.compras.length?r.compras.map(cp=>`<div style="display:flex;justify-content:space-between;padding:8px 12px;border-bottom:1px solid #f0f0ea;font-size:12px">
@@ -2768,31 +2781,28 @@ window.openClientePerfil=function(id){
     </div>`);
 }
 
-// ── Registrar compra diretamente no cadastro do cliente ────────────
+// ── Registrar compra como histórico do cliente (sem impacto operacional) ──
 window.abrirCompraCliente=function(clienteId){
   const c=clientes.find(x=>x.id===clienteId);
   if(!c) return;
   clienteCompraId=clienteId;
   modalMode='compracliente';
-  const disponiveis=produtos.filter(p=>!p.arquivado && qtdTotal(p.id)>0).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  const disponiveis=produtos.filter(p=>!p.arquivado).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
   if(!disponiveis.length){
-    openModal('🛍️ Registrar compra','<div class="empty-state">Não há produtos com estoque disponível para registrar esta compra.</div>');
+    openModal('🛍️ Registrar compra','<div class="empty-state">Não há produtos ativos cadastrados para registrar esta compra.</div>');
     return;
   }
   openModal('🛍️ Registrar compra — '+c.nome,`
-    <div class="cliente-compra-info">Esta opção registra a compra no histórico do cliente <strong>e baixa a quantidade do estoque</strong>.</div>
+    <div class="cliente-compra-info">Este registro é <strong>somente para o histórico do cliente</strong>. Ele não baixa estoque e não altera as vendas do dia ou do mês.</div>
     <div class="fg"><label>Produto</label>
       <div class="cliente-produto-busca">
         <div class="busca-wrap"><input type="search" id="f-compra-busca" placeholder="🔎 Digite o nome do produto..." autocomplete="off" oninput="filtrarProdutosCompraCliente(this.value)"><span class="busca-icone">⌕</span></div>
-        <div class="cliente-produto-hint">Digite, por exemplo, <strong>água</strong> e a lista abaixo mostrará somente os produtos encontrados.</div>
+        <div class="cliente-produto-hint">Digite, por exemplo, <strong>água</strong> e a lista abaixo mostrará somente os produtos encontrados. O registro é apenas informativo.</div>
       </div>
       <select id="f-compra-prod" onchange="carregarLotesCompraCliente()">
         <option value="">— selecione o produto —</option>
-        ${disponiveis.map(p=>`<option value="${p.id}">${p.nome} · ${qtdTotal(p.id)} un</option>`).join('')}
+        ${disponiveis.map(p=>`<option value="${p.id}">${p.nome}${qtdTotal(p.id)>0?' · '+qtdTotal(p.id)+' un':''}</option>`).join('')}
       </select>
-    </div>
-    <div class="fg"><label>Lote / validade</label>
-      <select id="f-compra-lote"><option value="">— selecione o produto primeiro —</option></select>
     </div>
     <div class="fr">
       <div class="fg"><label>Quantidade</label><input type="number" id="f-compra-qtd" value="1" min="1"></div>
@@ -2807,9 +2817,9 @@ window.filtrarProdutosCompraCliente=function(termo){
   const valorAtual=sel.value;
   const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
   const busca=norm(termo);
-  const disponiveis=produtos.filter(p=>!p.arquivado && qtdTotal(p.id)>0).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  const disponiveis=produtos.filter(p=>!p.arquivado).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
   const encontrados=busca?disponiveis.filter(p=>norm(p.nome).includes(busca)):disponiveis;
-  sel.innerHTML='<option value="">'+(busca?(encontrados.length?'— selecione um dos produtos encontrados —':'— nenhum produto encontrado —'):'— selecione o produto —')+'</option>'+encontrados.map(p=>`<option value="${p.id}">${p.nome} · ${qtdTotal(p.id)} un</option>`).join('');
+  sel.innerHTML='<option value="">'+(busca?(encontrados.length?'— selecione um dos produtos encontrados —':'— nenhum produto encontrado —'):'— selecione o produto —')+'</option>'+encontrados.map(p=>`<option value="${p.id}">${p.nome}${qtdTotal(p.id)>0?' · '+qtdTotal(p.id)+' un':''}</option>`).join('');
   if(valorAtual && encontrados.some(p=>p.id===valorAtual)) sel.value=valorAtual;
 }
 
@@ -3310,26 +3320,23 @@ window.confirmModal=function(){
   } else if(modalMode==='compracliente'){
     const cliente=clientes.find(x=>x.id===clienteCompraId);
     const prodId=document.getElementById('f-compra-prod')?.value;
-    const loteId=document.getElementById('f-compra-lote')?.value;
     const qtd=parseInt(document.getElementById('f-compra-qtd')?.value)||0;
-    const valorUnit=parseFloat(document.getElementById('f-compra-valor')?.value);
+    const valorRaw=document.getElementById('f-compra-valor')?.value;
+    const valorUnit=valorRaw!==''?parseFloat(valorRaw):null;
     const obsExtra=document.getElementById('f-compra-obs')?.value.trim()||'';
     const p=produtos.find(x=>x.id===prodId);
-    const l=lotes.find(x=>x.id===loteId);
-    if(!cliente||!p||!l){alert('Selecione o produto e o lote.');return;}
+    if(!cliente||!p){alert('Selecione o produto.');return;}
     if(qtd<=0){alert('Informe uma quantidade válida.');return;}
-    if(qtd>Number(l.qtd)){alert(`Quantidade indisponível neste lote. Há ${l.qtd} un disponíveis.`);return;}
-    if(isNaN(valorUnit)||valorUnit<=0){alert('Informe o valor unitário da compra.');return;}
-    const novaQtd=l.qtd-qtd;
-    if(novaQtd===0) remove(ref(db,`lotes/${loteId}`));
-    else update(ref(db,`lotes/${loteId}`),{qtd:novaQtd});
-    const s30=[...(p.saidas30||Array(30).fill(0))]; s30.push(qtd); s30.shift();
-    update(ref(db,`produtos2/${prodId}`),{saidas30:s30});
-    push(ref(db,'historico'),{
-      data:hoje(),produto:p.nome,tipo:'saida',qtd,
-      obs:'Venda'+(obsExtra?' — '+obsExtra:''),
-      valorUnitario:valorUnit,valorTotal:Math.round(valorUnit*qtd*100)/100,
-      clienteId:cliente.id,clienteNome:cliente.nome,clienteCpf:cliente.cpf||'',ts:Date.now()
+    if(valorRaw!=='' && (isNaN(valorUnit)||valorUnit<0)){alert('Informe um valor unitário válido.');return;}
+
+    // Registro informativo separado: NÃO mexe em lotes, saidas30 ou historico.
+    // Assim ele aparece no cadastro do cliente, mas não altera estoque nem faturamento.
+    push(ref(db,'registrosCliente'),{
+      data:hoje(),produto:p.nome,qtd,
+      valorUnitario:valorUnit,
+      valorTotal:valorUnit!==null?Math.round(valorUnit*qtd*100)/100:null,
+      obs:obsExtra,clienteId:cliente.id,clienteNome:cliente.nome,
+      clienteCpf:cliente.cpf||'',ts:Date.now()
     });
     clienteCompraId=null;
   } else if(modalMode==='addcliente'||modalMode==='editcliente'){
