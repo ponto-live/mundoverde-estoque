@@ -303,6 +303,8 @@ thead{background:#F5F7F2}th{padding:12px 13px;font-size:9.5px;color:#7A8276;lett
 .cliente-perfil-acoes .btn-green{font-size:11px}
 .cliente-compra-btn{border:1px solid #BFD9AE;background:#F3FAEE;color:#27500A;border-radius:9px;padding:8px 12px;font-weight:700;cursor:pointer}
 .cliente-compra-btn:hover{background:#EAF3DE;border-color:#9FC47D}
+.cliente-venda-abtn{padding:5px 8px;border:1px solid #79A94B;border-radius:6px;font-size:10px;cursor:pointer;background:#EEF7E8;color:#27500A;font-weight:700;margin-right:3px;font-family:inherit}
+.cliente-venda-abtn:hover{background:#DCEECF;border-color:#3B6D11;transform:translateY(-1px)}
 .cliente-compra-info{background:#F4FAEE;border:1px solid #D8E9CD;border-radius:10px;padding:10px 12px;font-size:11px;color:#53604E;margin-bottom:12px}
 
 @media(max-width:760px){
@@ -2555,7 +2557,8 @@ function renderClientesLista(){
           <td>${r.ultima||'—'}</td>
           <td>${fmtBRL(r.valorTotal)}</td>
           <td style="white-space:nowrap">
-            <button class="abtn v" onclick="openClientePerfil('${c.id}')" title="Ver">👁️</button>
+            <button class="abtn v" onclick="openClientePerfil('${c.id}')" title="Ver cadastro">👁️</button>
+            <button class="cliente-venda-abtn" onclick="abrirCompraCliente('${c.id}')" title="Registrar venda para este cliente">🛒 Venda</button>
             <button class="abtn e" onclick="openClienteModal('edit','${c.id}')" title="Editar">✏️</button>
             <button class="abtn ${c.ativo===false?'p':'m'}" onclick="toggleClienteAtivo('${c.id}')" title="${c.ativo===false?'Reativar':'Inativar'}">🗃️</button>
           </td>
@@ -2754,7 +2757,7 @@ window.openClientePerfil=function(id){
         <div style="margin-bottom:3px"><strong>Categoria preferida:</strong> ${r.catTop||'—'}</div>
       </div>
     </div>
-    <div class="cliente-perfil-acoes"><button class="cliente-compra-btn" onclick="event.preventDefault();abrirCompraCliente('${id}')">🛍️ Registrar compra</button><button class="btn-green" onclick="event.preventDefault();openClienteModal('edit','${id}')">✏️ Editar cadastro</button></div>
+    <div class="cliente-perfil-acoes"><button class="cliente-compra-btn" onclick="event.preventDefault();abrirCompraCliente('${id}')">🛒 Registrar venda</button><button class="btn-green" onclick="event.preventDefault();openClienteModal('edit','${id}')">✏️ Editar cadastro</button></div>
     <div style="font-weight:700;margin-bottom:6px;color:#888;font-size:10px;text-transform:uppercase">Histórico de compras (${r.numCompras} lançamento(s))</div>
     <div style="max-height:220px;overflow-y:auto;border:1px solid #eee;border-radius:8px">
       ${r.compras.length?r.compras.map(cp=>`<div style="display:flex;justify-content:space-between;padding:8px 12px;border-bottom:1px solid #f0f0ea;font-size:12px">
