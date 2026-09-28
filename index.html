@@ -306,6 +306,7 @@ thead{background:#F5F7F2}th{padding:12px 13px;font-size:9.5px;color:#7A8276;lett
 .cliente-venda-abtn{padding:5px 8px;border:1px solid #79A94B;border-radius:6px;font-size:10px;cursor:pointer;background:#EEF7E8;color:#27500A;font-weight:700;margin-right:3px;font-family:inherit}
 .cliente-venda-abtn:hover{background:#DCEECF;border-color:#3B6D11;transform:translateY(-1px)}
 .cliente-compra-info{background:#F4FAEE;border:1px solid #D8E9CD;border-radius:10px;padding:10px 12px;font-size:11px;color:#53604E;margin-bottom:12px}
+.cliente-produto-busca{position:relative;margin-bottom:7px}.cliente-produto-busca label{display:block;margin-bottom:6px}.cliente-produto-busca .busca-wrap{position:relative}.cliente-produto-busca input{width:100%;padding:11px 38px 11px 12px;border:1px solid #D8E4D0;border-radius:9px;background:#fff;font:inherit;font-size:13px;box-sizing:border-box}.cliente-produto-busca input:focus{outline:none;border-color:#79A94B;box-shadow:0 0 0 3px rgba(121,169,75,.12)}.cliente-produto-busca .busca-icone{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#6D7868;font-size:15px;pointer-events:none}.cliente-produto-hint{font-size:10px;color:#7A8474;margin-top:4px}
 
 @media(max-width:760px){
   .topbar{height:58px;padding:0 12px}
@@ -2781,6 +2782,10 @@ window.abrirCompraCliente=function(clienteId){
   openModal('🛍️ Registrar compra — '+c.nome,`
     <div class="cliente-compra-info">Esta opção registra a compra no histórico do cliente <strong>e baixa a quantidade do estoque</strong>.</div>
     <div class="fg"><label>Produto</label>
+      <div class="cliente-produto-busca">
+        <div class="busca-wrap"><input type="search" id="f-compra-busca" placeholder="🔎 Digite o nome do produto..." autocomplete="off" oninput="filtrarProdutosCompraCliente(this.value)"><span class="busca-icone">⌕</span></div>
+        <div class="cliente-produto-hint">Digite, por exemplo, <strong>água</strong> e a lista abaixo mostrará somente os produtos encontrados.</div>
+      </div>
       <select id="f-compra-prod" onchange="carregarLotesCompraCliente()">
         <option value="">— selecione o produto —</option>
         ${disponiveis.map(p=>`<option value="${p.id}">${p.nome} · ${qtdTotal(p.id)} un</option>`).join('')}
@@ -2794,6 +2799,18 @@ window.abrirCompraCliente=function(clienteId){
       <div class="fg"><label>Valor unitário (R$)</label><input type="number" id="f-compra-valor" value="" step="0.01" min="0" placeholder="Valor praticado"></div>
     </div>
     <div class="fg"><label>Observação (opcional)</label><input type="text" id="f-compra-obs" placeholder="Ex.: compra presencial, cupom #123"></div>`);
+}
+
+window.filtrarProdutosCompraCliente=function(termo){
+  const sel=document.getElementById('f-compra-prod');
+  if(!sel) return;
+  const valorAtual=sel.value;
+  const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+  const busca=norm(termo);
+  const disponiveis=produtos.filter(p=>!p.arquivado && qtdTotal(p.id)>0).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  const encontrados=busca?disponiveis.filter(p=>norm(p.nome).includes(busca)):disponiveis;
+  sel.innerHTML='<option value="">'+(busca?(encontrados.length?'— selecione um dos produtos encontrados —':'— nenhum produto encontrado —'):'— selecione o produto —')+'</option>'+encontrados.map(p=>`<option value="${p.id}">${p.nome} · ${qtdTotal(p.id)} un</option>`).join('');
+  if(valorAtual && encontrados.some(p=>p.id===valorAtual)) sel.value=valorAtual;
 }
 
 window.carregarLotesCompraCliente=function(){
