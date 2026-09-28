@@ -310,12 +310,20 @@ thead{background:#F5F7F2}th{padding:12px 13px;font-size:9.5px;color:#7A8276;lett
 
 @media(max-width:760px){
   .topbar{height:58px;padding:0 12px}
-  .topbar-search{max-width:none;margin:0 10px 0 0;flex:1}
-  .topbar-search input{height:38px}
+  .topbar-search{display:none}
+  .topbar-logo{display:flex !important;visibility:visible !important;align-items:center;gap:7px;margin-right:auto;color:#fff;font-size:15px;font-weight:800}
+  .topbar-logo > span:not(.mobile-logo-text){display:none}
+  .mobile-logo-img{display:block;width:112px;height:34px;object-fit:contain;object-position:left center}
+  .mobile-logo-text{display:none !important}
+  .topbar-right{margin-left:auto;gap:8px}
+  .hamburger{display:flex !important;width:40px;height:40px;align-items:center;justify-content:center;padding:8px}
+  .hamburger span{width:23px;height:2.5px}
   .sync{font-size:10px}
   .sidebar{background:#EEF7E7}
   .mv-logo-img{width:150px;max-height:60px}
+  .mobile-menu{top:58px}
 }
+
 </style>
 
 </head>
@@ -343,7 +351,7 @@ thead{background:#F5F7F2}th{padding:12px 13px;font-size:9.5px;color:#7A8276;lett
 <div class="main-area">
 
 <div class="topbar">
-  <div class="topbar-logo">🌿 Mundo Verde <span>Estoque</span></div>
+  <div class="topbar-logo"><img id="mobile-logo-img" class="mobile-logo-img" alt="Mundo Verde"><span class="mobile-logo-text">Mundo Verde</span><span>Estoque</span></div>
   <div class="topbar-search">
     <input id="global-search" type="text" placeholder="🔍 Buscar produto, marca ou categoria..." onkeydown="if(event.key==='Enter') globalSearch(this.value)">
   </div>
@@ -3377,6 +3385,13 @@ window.confirmModal=function(){
   }
   closeModal();
 }
+</script>
+<script>
+(function(){
+  var mobileLogo=document.getElementById('mobile-logo-img');
+  var sourceLogo=document.querySelector('.mv-logo-img');
+  if(mobileLogo && sourceLogo) mobileLogo.src=sourceLogo.src;
+})();
 </script>
 </body>
 </html>
