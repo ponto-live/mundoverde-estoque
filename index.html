@@ -335,6 +335,16 @@ thead{background:#F5F7F2}th{padding:12px 13px;font-size:9.5px;color:#7A8276;lett
 #tab-estoque .toolbtn.toolbtn-primary:hover{background:#155a89 !important;}
 #tab-estoque .toolbtn.toolbtn-purple:hover{background:#57327f !important;}
 #tab-estoque .toolbtn.toolbtn-green:hover{background:#27500A !important;}
+
+/* Tabela de estoque enquadrada (sem rolagem lateral no desktop) */
+.tbl-estoque{table-layout:fixed;width:100%}
+.tbl-estoque th{padding:10px 6px;white-space:normal;line-height:1.3;word-break:normal}
+.tbl-estoque>tbody>tr.prod-row>td{padding:10px 6px;word-break:break-word;overflow-wrap:anywhere}
+.tbl-estoque>tbody>tr.prod-row>td:first-child,.tbl-estoque th:first-child{padding-left:12px}
+.tbl-estoque>tbody>tr.prod-row .badge{white-space:normal!important;line-height:1.25;padding:3px 7px;text-align:center}
+.tbl-estoque>tbody>tr.prod-row>td:last-child{white-space:normal}
+.tbl-estoque>tbody>tr.prod-row>td:last-child .abtn{display:block;width:100%;margin:0 0 4px 0;padding:4px 2px;text-align:center}
+@media (max-width:900px){.tbl-estoque{min-width:980px}}
 </style>
 </head>
 <body>
@@ -443,21 +453,21 @@ thead{background:#F5F7F2}th{padding:12px 13px;font-size:9.5px;color:#7A8276;lett
     <div id="filtro-ativo-banner"></div>
     <div class="cat-filter" id="cat-filter"></div>
     <div class="table-wrap" style="overflow-x:auto">
-      <table style="min-width:1180px">
+      <table class="tbl-estoque">
         <thead>
           <tr>
-            <th style="width:19%">Produto</th>
-            <th style="width:6%">Total</th>
-            <th style="width:13%">Lotes / Próx. vencimento</th>
+            <th style="width:18%">Produto</th>
+            <th style="width:5%">Total</th>
+            <th style="width:11%">Lotes / Próx. vencimento</th>
             <th style="width:7%">Custo</th>
             <th style="width:7%">Venda</th>
-            <th style="width:8%">Giro 30d</th>
+            <th style="width:7%">Giro 30d</th>
             <th style="width:7%" title="Vendas reais dos últimos 30 dias ÷ 30">Venda/dia</th>
             <th style="width:7%" title="Estoque atual ÷ venda média/dia">Cobertura</th>
-            <th style="width:9%">Situação estoque</th>
-            <th style="width:7%" title="Quantidade para chegar a 30 dias de cobertura">Comprar</th>
+            <th style="width:10%">Situação estoque</th>
+            <th style="width:6%" title="Quantidade para chegar a 30 dias de cobertura">Comprar</th>
             <th style="width:8%">Status</th>
-            <th style="width:9%">Ações</th>
+            <th style="width:7%">Ações</th>
           </tr>
         </thead>
         <tbody id="produtos-tbody"><tr><td colspan="12"><div class="empty-state">🔄 Carregando...</div></td></tr></tbody>
