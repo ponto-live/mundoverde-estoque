@@ -335,16 +335,6 @@ thead{background:#F5F7F2}th{padding:12px 13px;font-size:9.5px;color:#7A8276;lett
 #tab-estoque .toolbtn.toolbtn-primary:hover{background:#155a89 !important;}
 #tab-estoque .toolbtn.toolbtn-purple:hover{background:#57327f !important;}
 #tab-estoque .toolbtn.toolbtn-green:hover{background:#27500A !important;}
-
-/* Tabela de estoque enquadrada (sem rolagem lateral no desktop) */
-.tbl-estoque{table-layout:fixed;width:100%}
-.tbl-estoque th{padding:10px 6px;white-space:normal;line-height:1.3;word-break:normal}
-.tbl-estoque>tbody>tr.prod-row>td{padding:10px 6px;word-break:break-word;overflow-wrap:anywhere}
-.tbl-estoque>tbody>tr.prod-row>td:first-child,.tbl-estoque th:first-child{padding-left:12px}
-.tbl-estoque>tbody>tr.prod-row .badge{white-space:normal!important;line-height:1.25;padding:3px 7px;text-align:center}
-.tbl-estoque>tbody>tr.prod-row>td:last-child{white-space:normal}
-.tbl-estoque>tbody>tr.prod-row>td:last-child .abtn{display:block;width:100%;margin:0 0 4px 0;padding:4px 2px;text-align:center}
-@media (max-width:900px){.tbl-estoque{min-width:980px}}
 </style>
 </head>
 <body>
@@ -453,21 +443,21 @@ thead{background:#F5F7F2}th{padding:12px 13px;font-size:9.5px;color:#7A8276;lett
     <div id="filtro-ativo-banner"></div>
     <div class="cat-filter" id="cat-filter"></div>
     <div class="table-wrap" style="overflow-x:auto">
-      <table class="tbl-estoque">
+      <table style="min-width:1180px">
         <thead>
           <tr>
-            <th style="width:18%">Produto</th>
-            <th style="width:5%">Total</th>
-            <th style="width:11%">Lotes / Próx. vencimento</th>
+            <th style="width:19%">Produto</th>
+            <th style="width:6%">Total</th>
+            <th style="width:13%">Lotes / Próx. vencimento</th>
             <th style="width:7%">Custo</th>
             <th style="width:7%">Venda</th>
-            <th style="width:7%">Giro 30d</th>
+            <th style="width:8%">Giro 30d</th>
             <th style="width:7%" title="Vendas reais dos últimos 30 dias ÷ 30">Venda/dia</th>
             <th style="width:7%" title="Estoque atual ÷ venda média/dia">Cobertura</th>
-            <th style="width:10%">Situação estoque</th>
-            <th style="width:6%" title="Quantidade para chegar a 30 dias de cobertura">Comprar</th>
+            <th style="width:9%">Situação estoque</th>
+            <th style="width:7%" title="Quantidade para chegar a 30 dias de cobertura">Comprar</th>
             <th style="width:8%">Status</th>
-            <th style="width:7%">Ações</th>
+            <th style="width:9%">Ações</th>
           </tr>
         </thead>
         <tbody id="produtos-tbody"><tr><td colspan="12"><div class="empty-state">🔄 Carregando...</div></td></tr></tbody>
@@ -661,6 +651,7 @@ thead{background:#F5F7F2}th{padding:12px 13px;font-size:9.5px;color:#7A8276;lett
       <button class="cat-chip active" id="cli-sub-lista" onclick="setClienteSubTab('lista')">📋 Lista</button>
       <button class="cat-chip" id="cli-sub-crm" onclick="setClienteSubTab('crm')">📊 CRM</button>
       <button class="cat-chip" id="cli-sub-aniversariantes" onclick="setClienteSubTab('aniversariantes')">🎂 Aniversariantes</button>
+      <button class="cat-chip" id="cli-sub-procurados" onclick="setClienteSubTab('procurados')">🔎 Produtos procurados</button>
     </div>
     <div id="clientes-content"></div>
   </div>
@@ -703,6 +694,7 @@ let produtos  = [];   // [{id, nome, cat, ean, custo, min, saidas30}]
 let lotes     = [];   // [{id, prodId, qtd, validade, obs, ts}]
 let historico = [];
 let registrosCliente = []; // registros informativos do histórico do cliente — não afetam estoque/faturamento
+let produtosProcurados = []; // demandas de produtos que clientes procuram e a loja não tem
 let filtrocat = 'Todos';
 let modalMode = '', selProdId = null, selLoteId = null;
 let expandidos = new Set();
@@ -788,6 +780,12 @@ onValue(ref(db,'registrosCliente'), snap=>{
   const data=snap.val();
   registrosCliente=data?Object.entries(data).map(([id,v])=>({...v,id})).sort((a,b)=>(b.ts||0)-(a.ts||0)):[];
   if(document.getElementById('tab-clientes')?.classList.contains('active')) renderClientes();
+});
+
+onValue(ref(db,'produtosProcurados'), snap=>{
+  const data=snap.val();
+  produtosProcurados=data?Object.entries(data).map(([id,v])=>({...v,id})).sort((a,b)=>(b.ts||0)-(a.ts||0)):[];
+  if(document.getElementById('tab-clientes')?.classList.contains('active') && clienteSubTab==='procurados') renderClientes();
 });
 
 let tarefas=[];
@@ -2543,13 +2541,14 @@ function clienteResumo(clienteId){
 
 // ── Render dispatcher ────────────────────────────────────────────
 window.renderClientes=function(){
-  ['lista','crm','aniversariantes'].forEach(t=>{
+  ['lista','crm','aniversariantes','procurados'].forEach(t=>{
     const el=document.getElementById('cli-sub-'+t);
     if(el) el.classList.toggle('active',t===clienteSubTab);
   });
   if(clienteSubTab==='lista') renderClientesLista();
   else if(clienteSubTab==='crm') renderClientesCRM();
-  else renderClientesAniversariantes();
+  else if(clienteSubTab==='aniversariantes') renderClientesAniversariantes();
+  else renderProdutosProcurados();
 }
 window.setClienteSubTab=function(t){ clienteSubTab=t; renderClientes(); }
 window.setClienteFiltro=function(f){ clienteFiltro=f; clienteSubTab='lista'; renderClientes(); }
@@ -2709,6 +2708,42 @@ function renderClientesCRM(){
         </div>
       </div>
     </div>`;
+  document.getElementById('clientes-content').innerHTML=html;
+}
+
+window.openProdutoProcuradoModal=function(){
+  modalMode='addprocurado';
+  openModal('🔎 Registrar produto procurado',`
+    <div class="cliente-compra-info">Use para anotar produtos que clientes pedem e a loja ainda não trabalha ou não tem disponível. <strong>Não altera estoque nem vendas.</strong></div>
+    <div class="fg"><label>Produto procurado *</label><input type="text" id="f-proc-produto" placeholder="Ex.: Água de coco sem açúcar"></div>
+    <div class="fr">
+      <div class="fg"><label>Marca (opcional)</label><input type="text" id="f-proc-marca" placeholder="Ex.: Marca X"></div>
+      <div class="fg"><label>Categoria (opcional)</label><input type="text" id="f-proc-categoria" placeholder="Ex.: Bebidas"></div>
+    </div>
+    <div class="fg"><label>Cliente (opcional)</label><input type="text" id="f-proc-cliente" placeholder="Nome do cliente, se quiser registrar"></div>
+    <div class="fg"><label>Observação (opcional)</label><input type="text" id="f-proc-obs" placeholder="Ex.: procura versão 1L / sem açúcar"></div>`);
+}
+window.excluirProdutoProcurado=function(id){
+  if(confirm('Excluir este registro de produto procurado?')) remove(ref(db,`produtosProcurados/${id}`));
+}
+window.marcarProdutoAtendido=function(id,atendido){
+  update(ref(db,`produtosProcurados/${id}`),{atendido:!!atendido});
+}
+function renderProdutosProcurados(){
+  const pend=produtosProcurados.filter(x=>!x.atendido);
+  const grupos={};
+  pend.forEach(x=>{ const k=(x.produto||'').trim().toLocaleLowerCase('pt-BR'); if(!k)return; if(!grupos[k])grupos[k]={nome:x.produto,marca:x.marca||'',qtd:0}; grupos[k].qtd++; });
+  const top=Object.values(grupos).sort((a,b)=>b.qtd-a.qtd).slice(0,6);
+  const html=`
+    <div class="sec-header" style="margin-top:4px"><div><div class="sec-title">🔎 Produtos que os clientes estão procurando</div><div style="font-size:11px;color:#888;margin-top:3px">Use esta lista como apoio para futuras compras e inclusão de novos produtos.</div></div><button class="btn-green" onclick="openProdutoProcuradoModal()">+ Registrar procura</button></div>
+    <div class="metrics" style="margin-bottom:14px">
+      <div class="metric"><div class="metric-label">🔎 Procuras pendentes</div><div class="metric-value" style="color:var(--laranja)">${pend.length}</div><div class="metric-sub">registros para avaliar</div></div>
+      <div class="metric"><div class="metric-label">📦 Produtos diferentes</div><div class="metric-value" style="color:var(--verde)">${Object.keys(grupos).length}</div><div class="metric-sub">itens solicitados</div></div>
+    </div>
+    ${top.length?`<div class="dash-card" style="margin-bottom:14px"><h3>⭐ Mais procurados</h3>${top.map((x,i)=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid #eee;font-size:12px"><span><strong>${i+1}. ${x.nome}</strong>${x.marca?' · '+x.marca:''}</span><span style="font-weight:800;color:var(--verde)">${x.qtd} procura(s)</span></div>`).join('')}</div>`:''}
+    <div class="table-wrap"><div style="overflow-x:auto"><table style="min-width:800px"><thead><tr><th>Data</th><th>Produto procurado</th><th>Marca</th><th>Categoria</th><th>Cliente</th><th>Observação</th><th>Status</th><th>Ações</th></tr></thead><tbody>
+    ${produtosProcurados.length?produtosProcurados.map(x=>`<tr style="${x.atendido?'opacity:.55':''}"><td>${x.data||'—'}</td><td style="font-weight:700">${x.produto||'—'}</td><td>${x.marca||'—'}</td><td>${x.categoria||'—'}</td><td>${x.cliente||'—'}</td><td>${x.obs||'—'}</td><td>${x.atendido?'✅ Atendido':'🟡 Pendente'}</td><td style="white-space:nowrap"><button class="abtn v" onclick="marcarProdutoAtendido('${x.id}',${!x.atendido})" title="${x.atendido?'Reabrir':'Marcar como atendido'}">${x.atendido?'↩️':'✅'}</button><button class="abtn m" onclick="excluirProdutoProcurado('${x.id}')" title="Excluir">🗑️</button></td></tr>`).join(''):'<tr><td colspan="8"><div class="empty-state">Nenhum produto procurado registrado ainda.</div></td></tr>'}
+    </tbody></table></div></div>`;
   document.getElementById('clientes-content').innerHTML=html;
 }
 
@@ -3345,6 +3380,17 @@ window.confirmModal=function(){
       }
     }
     update(ref(db,`historico/${selHistId}`),updObj);
+  } else if(modalMode==='addprocurado'){
+    const produto=document.getElementById('f-proc-produto')?.value.trim()||'';
+    if(!produto){alert('Informe o produto que o cliente procurou.');return;}
+    push(ref(db,'produtosProcurados'),{
+      produto,
+      marca:document.getElementById('f-proc-marca')?.value.trim()||'',
+      categoria:document.getElementById('f-proc-categoria')?.value.trim()||'',
+      cliente:document.getElementById('f-proc-cliente')?.value.trim()||'',
+      obs:document.getElementById('f-proc-obs')?.value.trim()||'',
+      data:hoje(),atendido:false,ts:Date.now()
+    });
   } else if(modalMode==='compracliente'){
     const cliente=clientes.find(x=>x.id===clienteCompraId);
     const prodId=document.getElementById('f-compra-prod')?.value;
